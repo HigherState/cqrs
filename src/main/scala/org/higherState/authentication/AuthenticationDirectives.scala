@@ -7,8 +7,8 @@ trait AuthenticationDirectives extends ValidationDirectives {
 
   def repository:AuthenticationRepository  { type R[T] = d.R[T] }
 
-  def doesNotExist[T](userLogin:UserLogin)(f: => R[T]):R[T] =
-    conditional(repository.getUserCredentials(userLogin), )
-
+//  def doesNotExist[T](userLogin:UserLogin)(f: => R[T]):R[T] =
+//    conditional(repository.getUserCredentials(userLogin), )
+//
 
 }

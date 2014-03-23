@@ -26,7 +26,7 @@ trait AuthenticationRepository extends Service {
 
 trait InMemoryAuthenticationRepository extends AuthenticationRepository {
 
-  type R[T] = T
+  type R[+T] = T
 
   def state:mutable.Map[UserLogin, UserCredentials]
 

@@ -13,32 +13,48 @@ trait Directives {
   def complete:R[Unit] =
     result[Unit](Unit)
 
-  def complete[T](value: => R[T]):R[Unit] =
+  def result[T](value:T):R[T]
+}
+
+trait Bridge {
+  this:Directives =>
+
+  type R2[+T]
+
+  def complete[T](value: => R2[T]):R[Unit] =
     onSuccess[T, Unit](value)(s => result[Unit](Unit))
 
-  def foreachComplete(func:TraversableOnce[R[Unit]]):R[Unit]
+  def success[T](value: => R2[T]):R[T] =
+    onSuccess[T,T](value)(t => result(t))
 
-  def result[T](value:T):R[T]
+  def onSuccess[S, T](value:R2[S])(f : (S) => R[T]): R[T]
 
-  def onSuccess[S, T](value:R[S])(f : (S) => R[T]): R[T]
+  def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit]
 
-  def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T]
+  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T]
 }
 
 trait IdentityDirectives extends Directives {
 
   type R[+T] = T
 
-  def foreachComplete(func:TraversableOnce[R[Unit]]):Unit =
-    Unit
-
   def result[T](value:T):R[T] =
     value
 
-  def onSuccess[S, T](value:R[S])(f : (S) => R[T]) =
+}
+
+trait IdentityBridge extends Bridge {
+  this:Directives =>
+
+  type R2[+T] = T
+
+  def onSuccess[S, T](value:R2[S])(f : (S) => R[T]) =
     f(value)
 
-  def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]) =
+  def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit] =
+    complete
+
+  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]) =
     v(value).getOrElse(f(value))
 }
 
@@ -48,16 +64,24 @@ trait FutureDirectives extends Directives {
 
   type R[+T] = Future[T]
 
-  def foreachComplete(func:TraversableOnce[R[Unit]]):R[Unit] =
-    Future.sequence(func).map(t => Unit)
-
   def result[T](value:T):R[T] =
     Future.successful(value)
+}
 
-  def onSuccess[S, T](value:R[S])(f : (S) => R[T]): R[T] =
+trait FutureBridge extends Bridge {
+  this:FutureDirectives =>
+
+  implicit def executionContext:ExecutionContext
+
+  type R2[+T] = Future[T]
+
+  def onSuccess[S, T](value:R2[S])(f : (S) => R[T]): R[T] =
     value.flatMap(f)
 
-  def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
+  def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit] =
+    Future.sequence(func).map(t => Unit)
+
+  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
     onSuccess(value){ s =>
       v(s).getOrElse(f(s))
     }
@@ -66,35 +90,54 @@ trait FutureDirectives extends Directives {
 
 trait ValidationDirectives extends Directives {
 
-  def failed[T](failure: => ValidationFailure):R[T]
+  def failure[T](failure: => ValidationFailure):R[T]
+
+  def failures[T](failed: => NonEmptyList[ValidationFailure]):R[T]
 }
 
 trait ValidationOnlyDirectives extends ValidationDirectives {
 
-  type R[+T] = ValidationNel[ValidationFailure, T]
-
-  def foreachComplete(func:TraversableOnce[R[Unit]]):R[Unit] =
-    func.foldLeft(complete){
-      case (v, Success(_)) =>
-        v
-      case (Failure(v), Failure(vf)) =>
-        Failure(v.append(vf))
-      case (_,c) =>
-        c
-    }
-
-  def failed[T](failure: => ValidationFailure): R[T] =
-    Failure(NonEmptyList(failure))
 
   def result[T](value: T): R[T] =
     Success(value)
 
-  def onSuccess[S, T](value:R[S])(f : (S) => R[T]): R[T] =
-    value.flatMap(f)
+  type R[+T] = ValidationNel[ValidationFailure, T]
 
-  def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
-    value.flatMap{s =>
-      v(s).getOrElse(f(s))
+  def failure[T](failure: => ValidationFailure): R[T] =
+    Failure(NonEmptyList(failure))
+
+  def failures[T](failures: => NonEmptyList[ValidationFailure]):R[T] =
+    Failure(failures)
+
+}
+
+trait ValidationOnlyBridge extends Bridge {
+  this:ValidationDirectives =>
+
+  type R2[+T] = ValidationNel[ValidationFailure, T]
+
+  def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit] =
+    func.toIterator.collect {
+      case Failure(f) => f
+    }.reduceOption(_.append(_))
+      .map(f => failures[Unit](f))
+      .getOrElse(complete)
+
+
+  def onSuccess[S, T](value:R2[S])(f : (S) => R[T]): R[T] =
+    value match {
+      case Failure(vf) =>
+        failures[T](vf)
+      case Success(s) =>
+        f(s)
+    }
+
+  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
+    value match {
+      case Failure(vf) =>
+        failures[T](vf)
+      case Success(s) =>
+        v(s).getOrElse(f(s))
     }
 }
 
@@ -104,7 +147,20 @@ trait FutureValidationDirectives extends ValidationDirectives {
 
   type R[+T] = Future[ValidationNel[ValidationFailure, T]]
 
-  def foreachComplete(func:TraversableOnce[R[Unit]]):R[Unit] =
+  def failure[T](failure: => ValidationFailure) =
+    Future.successful(Failure(NonEmptyList(failure)))
+
+  def failures[T](failures: => NonEmptyList[ValidationFailure]):R[T] =
+    Future.successful(Failure(failures))
+}
+
+trait FutureValidationBridge extends Bridge {
+
+  this:FutureValidationDirectives =>
+
+  type R2[+T] = Future[ValidationNel[ValidationFailure, T]]
+
+  def foreach(func:TraversableOnce[R2[Unit]]):R[Unit] =
     Future.sequence(func).map(_.foldLeft[ValidationNel[ValidationFailure, Unit]](Success(Unit)) {
       case (v, Success(_)) =>
         v
@@ -114,9 +170,6 @@ trait FutureValidationDirectives extends ValidationDirectives {
         c
     })
 
-  def failed[T](failure: => ValidationFailure) =
-    Future.failed(ValidationException(failure))
-
   def result[T](value: T) =
     Future.successful(Success(value))
 
@@ -125,7 +178,7 @@ trait FutureValidationDirectives extends ValidationDirectives {
       case Success(s) =>
         f(s)
       case Failure(vf) =>
-        Future.successful(Failure(vf))
+        failures(vf)
     }
 
   def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =

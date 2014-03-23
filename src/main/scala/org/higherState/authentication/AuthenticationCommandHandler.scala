@@ -7,10 +7,10 @@ import org.higherState.cqrs.CommandHandler
  */
 trait AuthenticationCommandHandler extends CommandHandler with AuthenticationDirectives {
 
-  type C = this.type
+  type C = AuthenticationCommand
 
-  def handle = {
-    case CreateNewUser(userLogin, password) =>
-
-  }
+//  def handle = {
+//    case CreateNewUser(userLogin, password) =>
+//
+//  }
 }

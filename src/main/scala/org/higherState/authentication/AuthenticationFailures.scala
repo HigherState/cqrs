@@ -14,4 +14,4 @@ case class PasswordChangeRequiredFailure(userLogin:UserLogin) extends Authentica
 
 case class UserCredentialsAlreadyExistFailure(userLogin:UserLogin) extends AuthenticationFailure
 
-case class TokenExpiredFailure(token:Token) extends AuthenticationFailure
+case class TokenExpiredFailure(token:ResetToken) extends AuthenticationFailure

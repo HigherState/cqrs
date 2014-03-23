@@ -2,15 +2,39 @@ package org.higherState.authentication
 
 import org.higherState.cqrs.CommandHandler
 
-/**
- * Created by Gelfling on 23/03/14.
- */
+
 trait AuthenticationCommandHandler extends CommandHandler with AuthenticationDirectives {
 
   type C = AuthenticationCommand
 
-//  def handle = {
-//    case CreateNewUser(userLogin, password) =>
-//
-//  }
+  def handle = {
+    case CreateNewUser(userLogin, password) =>
+      uniqueCheck(userLogin) {
+        complete{
+          repository.addUserCredentials(
+            UserCredentials(
+              userLogin,
+              password,
+              false,
+              false,
+              None
+            )
+          )
+        }
+      }
+    case CreateNewUserWithToken(userLogin) =>
+      uniqueCheck(userLogin) {
+        complete{
+          repository.addUserCredentials(
+            UserCredentials(
+              userLogin,
+              password,
+              false,
+              false,
+              None
+            )
+          )
+        }
+      }
+  }
 }

@@ -6,8 +6,6 @@ import scala.collection.mutable
 import org.higherState.cqrs.akka.{AkkaCqrsService, ActorWrapper}
 import org.higherState.cqrs.directives._
 import scala.concurrent.{ExecutionContext, Future}
-import org.higherState.cqrs.Get
-import org.higherState.cqrs.Put
 
 trait MapService extends CqrsService {
 

@@ -31,7 +31,6 @@ trait Bridge {
 
   def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit]
 
-  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T]
 }
 
 trait IdentityDirectives extends Directives {
@@ -53,9 +52,6 @@ trait IdentityBridge extends Bridge {
 
   def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit] =
     complete
-
-  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]) =
-    v(value).getOrElse(f(value))
 }
 
 trait FutureDirectives extends Directives {
@@ -81,10 +77,6 @@ trait FutureBridge extends Bridge {
   def foreach(func: => TraversableOnce[R2[Unit]]):R[Unit] =
     Future.sequence(func).map(t => Unit)
 
-  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
-    onSuccess(value){ s =>
-      v(s).getOrElse(f(s))
-    }
 }
 
 
@@ -131,14 +123,6 @@ trait ValidationOnlyBridge extends Bridge {
       case Success(s) =>
         f(s)
     }
-
-  def conditional[S, T](value:R2[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
-    value match {
-      case Failure(vf) =>
-        failures[T](vf)
-      case Success(s) =>
-        v(s).getOrElse(f(s))
-    }
 }
 
 trait FutureValidationDirectives extends ValidationDirectives {
@@ -179,10 +163,5 @@ trait FutureValidationBridge extends Bridge {
         f(s)
       case Failure(vf) =>
         failures(vf)
-    }
-
-  def conditional[S, T](value:R[S], v:S => Option[R[T]])(f : (S) => R[T]):R[T] =
-    onSuccess(value){ s =>
-      v(s).getOrElse(f(s))
     }
 }

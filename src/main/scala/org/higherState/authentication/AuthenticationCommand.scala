@@ -14,8 +14,6 @@ case class CreateNewUser(userLogin:UserLogin, password:Password) extends Authent
 
 case class CreateNewUserWithToken(userLogin:UserLogin) extends AuthenticationCommand
 
-case class CreateNewUserWithRandomPassword(userLogin:UserLogin, resetRequired:Boolean) extends AuthenticationCommand
-
 case class RequestResetToken(userLogin:UserLogin) extends AuthenticationCommand
 
 case class RemoveLock(userLogin:UserLogin) extends AuthenticationCommand

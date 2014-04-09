@@ -4,8 +4,8 @@ import _root_.akka.actor.{ActorRef, ActorRefFactory}
 import org.higherState.cqrs.identity.IdentityCqrsService
 import scala.collection.mutable
 import org.higherState.cqrs.akka.{AkkaCqrsService, ActorWrapper}
-import org.higherState.cqrs.directives._
 import scala.concurrent.{ExecutionContext, Future}
+import org.higherState.cqrs.pipes.{FuturePipe, IdentityPipe, Pipe}
 
 trait MapService extends CqrsService {
 
@@ -43,25 +43,23 @@ trait MapDataService extends Service {
   def +=(kv: (Int, String)):R[this.type]
 }
 
-trait MapCommandHandler extends CommandHandler with Directives with Bridge {
-  ch =>
+trait MapCommandHandler extends CommandHandler with Pipe {
 
-  def service:MapDataService{type R[T]= ch.R2[T]}
+  def service:MapDataService{type R[T]= Out[T]}
 
   type C = MapCommand
 
   def handle = {
     case Put(key, value) =>
-      complete {
+      onSuccess {
         service += key -> value
-      }
-
+      } { complete}
   }
 }
 
-trait MapQuery extends Query with Directives with Bridge {
+trait MapQuery extends Query with Pipe {
   q =>
-  def service:MapDataService{type R[T] = q.R2[T]}
+  def service:MapDataService{type R[T] = Out[T]}
 
   type QP = MapQueryParameters
 
@@ -79,11 +77,11 @@ case object MapIdentityService extends MapService with IdentityCqrsService {
 
   val state = new mutable.HashMap[Int,String] with MapDataService with Repository
 
-  def query = new MapQuery with IdentityDirectives with IdentityBridge {
+  def query = new MapQuery with IdentityPipe {
     def service = state
   }
 
-  def commandHandler = new MapCommandHandler with IdentityDirectives with IdentityBridge {
+  def commandHandler = new MapCommandHandler with IdentityPipe {
     def service = state
   }
 }
@@ -94,7 +92,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") {
-      new MapCommandHandler with ActorWrapper with IdentityDirectives with IdentityBridge {
+      new MapCommandHandler with ActorWrapper with IdentityPipe {
         def service = state
 
         implicit def executionContext: ExecutionContext = parent.executionContext
@@ -103,7 +101,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.
 
   protected val query: ActorRef =
     getQueryRef("Map") {
-      new MapQuery with ActorWrapper with IdentityDirectives with IdentityBridge {
+      new MapQuery with ActorWrapper with IdentityPipe {
         def service = state
 
         implicit def executionContext: ExecutionContext = parent.executionContext
@@ -132,7 +130,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:_root_
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") {
-      new MapCommandHandler with ActorWrapper with FutureDirectives with FutureBridge {
+      new MapCommandHandler with ActorWrapper with FuturePipe {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = parent.executionContext
@@ -141,7 +139,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:_root_
 
   protected val query: ActorRef =
     getQueryRef("Map") {
-      new MapQuery with ActorWrapper with FutureDirectives with FutureBridge {
+      new MapQuery with ActorWrapper with FuturePipe {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = parent.executionContext

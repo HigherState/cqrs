@@ -14,11 +14,15 @@ trait DoubleMapCommandHandler extends CommandHandler {
     case Put(key, value) =>
       if (key.hashCode() % 1 == 0)
         leftPipe {p =>
-          p.complete(p.service += key -> value)
+          p.onSuccessComplete {
+            p.service += key -> value
+          }
         }
       else
         rightPipe { p =>
-          p.complete(p.service += key -> value)
+          p.onSuccessComplete{
+            p.service += key -> value
+          }
         }
   }
 }

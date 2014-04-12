@@ -45,22 +45,24 @@ trait MapDataService extends Service {
 
 trait MapCommandHandler extends CommandHandler with Pipe {
 
-  def service:MapDataService{type R[T]= Out[T]}
+  def service:MapDataService{type R[+T]= In[T]}
 
+  type R[+T] = Out[T]
   type C = MapCommand
 
   def handle = {
     case Put(key, value) =>
       onSuccess {
         service += key -> value
-      } { complete}
+      } { s => complete}
   }
 }
 
 trait MapQuery extends Query with Pipe {
-  q =>
-  def service:MapDataService{type R[T] = Out[T]}
 
+  def service:MapDataService{type R[T] = In[T]}
+
+  type R[+T] = Out[T]
   type QP = MapQueryParameters
 
   def execute = {

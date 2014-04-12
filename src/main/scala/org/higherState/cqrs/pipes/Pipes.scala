@@ -15,6 +15,9 @@ trait Pipe extends Directives {
   def success[T](value: => In[T]):Out[T] =
     onSuccess[T,T](value)(t => result(t))
 
+  def onSuccessComplete[T](value: => In[T]):Out[Unit] =
+    onSuccess[T, Unit](value)(t => complete)
+
   def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T]
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]

@@ -3,13 +3,14 @@ package org.higherState.cqrs.pipes
 import org.higherState.cqrs.Query
 import org.higherState.cqrs.directives.Directives
 
-trait DoubleMapQuery extends Query with Directives{
+trait DoubleMapQuery extends Query with Directives {
 
   type QP = MapQueryParameters
 
-  def leftPipe:ServicePipe[MapDataService]{type Out[T] = Out[T]}
+  def leftPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
 
-  def rightPipe:ServicePipe[MapDataService]{type Out[T] = Out[T]}
+  def rightPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
+
 
   def execute = {
     case Get(key) =>

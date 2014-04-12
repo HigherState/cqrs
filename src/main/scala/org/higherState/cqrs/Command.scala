@@ -2,11 +2,9 @@ package org.higherState.cqrs
 
 trait Command extends Message
 
-trait CommandHandler {
+trait CommandHandler extends Output {
 
   type C <: Command
 
-  type CR[+T]
-
-  def handle:Function[C, CR[Unit]]
+  def handle:Function[C, Out[Unit]]
 }

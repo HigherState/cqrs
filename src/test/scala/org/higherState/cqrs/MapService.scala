@@ -7,7 +7,7 @@ import org.higherState.cqrs.akka.{AkkaCqrsService, ActorWrapper}
 import scala.concurrent.{ExecutionContext, Future}
 import org.higherState.cqrs.pipes.{FuturePipe, IdentityPipe, Pipe}
 
-trait MapService extends CqrsService {
+trait MapService[R[_]] extends CqrsService[R] {
 
   type C = MapCommand
   type QP = MapQueryParameters
@@ -34,7 +34,7 @@ case object Values extends MapQueryParameters
 sealed trait MapCommand extends Command
 case class Put(key:Int, value:String) extends MapCommand
 
-trait MapDataService extends Service {
+trait MapDataService[R[_]] extends Service[R] {
 
   def get(key:Int):R[Option[String]]
 
@@ -45,7 +45,7 @@ trait MapDataService extends Service {
 
 trait MapCommandHandler extends CommandHandler with Pipe {
 
-  def service:MapDataService{type R[+T]= In[T]}
+  def service:MapDataService[In]
 
   type CR[+T] = Out[T]
   type C = MapCommand
@@ -60,7 +60,7 @@ trait MapCommandHandler extends CommandHandler with Pipe {
 
 trait MapQuery extends Query with Pipe {
 
-  def service:MapDataService{type R[T] = In[T]}
+  def service:MapDataService[In]
 
   type QR[+T] = Out[T]
   type QP = MapQueryParameters
@@ -75,9 +75,9 @@ trait MapQuery extends Query with Pipe {
   }
 }
 
-case object MapIdentityService extends MapService with IdentityCqrsService {
+case object MapIdentityService extends MapService[Identity] with IdentityCqrsService {
 
-  val state = new mutable.HashMap[Int,String] with MapDataService with Repository
+  val state = new mutable.HashMap[Int,String] with MapDataService[Identity]
 
   def query = new MapQuery with IdentityPipe {
     def service = state
@@ -88,9 +88,9 @@ case object MapIdentityService extends MapService with IdentityCqrsService {
   }
 }
 
-case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService with AkkaCqrsService {
+case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService[Future] with AkkaCqrsService {
   parent =>
-  val state = new mutable.HashMap[Int,String] with MapDataService with Repository
+  val state = new mutable.HashMap[Int,String] with MapDataService[Identity]
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") {
@@ -111,22 +111,20 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.
     }
 }
 
-class FutureMapDataService(implicit executionContext:ExecutionContext) extends MapDataService {
+class FutureMapDataService(implicit executionContext:ExecutionContext) extends MapDataService[Future] {
   val state = new mutable.HashMap[Int,String]()
 
-  type R[+T] = Future[T]
-
-  def get(key: Int): R[Option[String]] =
+  def get(key: Int): Future[Option[String]] =
     Future(state.get(key))
 
-  def values: R[TraversableOnce[String]] =
+  def values: Future[TraversableOnce[String]] =
     Future(state.values)
 
   def +=(kv: (Int, String)):Future[this.type] =
     Future(state += kv).map(_ => this)
 }
 
-case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService with AkkaCqrsService {
+case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService[Future] with AkkaCqrsService {
   parent =>
   val futureService = new FutureMapDataService
 

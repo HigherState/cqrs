@@ -2,11 +2,9 @@ package org.higherState.cqrs
 
 trait QueryParameters extends Message
 
-trait Query {
+trait Query extends Output {
 
   type QP <: QueryParameters
 
-  type QR[+T]
-
-  def execute:Function[QP, QR[Any]]
+  def execute:Function[QP, Out[Any]]
 }

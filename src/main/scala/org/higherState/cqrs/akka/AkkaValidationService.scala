@@ -4,10 +4,10 @@ import akka.actor._
 import scala.reflect.ClassTag
 import scala.concurrent.Future
 
-import org.higherState.cqrs.{ValidationFailure, Query, CommandHandler, Service}
+import org.higherState.cqrs.{ValidationFailure, Service, FutureValid}
 import scalaz._
 
-trait AkkaValidationService extends Service with ActorRefBuilder {
+trait AkkaValidationService extends Service[FutureValid] with ActorRefBuilder {
 
   import akka.pattern.ask
   implicit def timeout:akka.util.Timeout

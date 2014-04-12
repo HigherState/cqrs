@@ -1,6 +1,6 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.{ValidationFailure, Service}
+import org.higherState.cqrs.{Identity, ValidationFailure, Service}
 import org.higherState.cqrs.directives._
 import scala.concurrent.{Future, ExecutionContext}
 import scalaz.{Success, Failure, ValidationNel}
@@ -9,8 +9,6 @@ trait Pipe extends Directives {
 
   type In[+T]
 
-  def apply[T](f:this.type => Out[T]) =
-    f(this)
 
   def success[T](value: => In[T]):Out[T] =
     onSuccess[T,T](value)(t => result(t))
@@ -23,14 +21,17 @@ trait Pipe extends Directives {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
-trait ServicePipe[S <: Service] extends Pipe {
+trait ServicePipe[S[_], U[+_]] extends Pipe {
+  def service:S[In[_]]
+  type Out[+T] = U[T]
 
-  def service:S{type R[+T] = In[T]}
+  def apply[T](f:this.type => Out[T]) =
+    f(this)
 }
 
 trait IdentityPipe extends Pipe with IdentityDirectives {
 
-  type In[+T] = T
+  type In[+T] = Identity[T]
 
   def onSuccess[S, T](value:Out[S])(f : (S) => In[T]) =
     f(value)

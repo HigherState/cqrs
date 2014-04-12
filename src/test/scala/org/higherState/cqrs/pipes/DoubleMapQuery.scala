@@ -6,11 +6,10 @@ import org.higherState.cqrs.directives.Directives
 trait DoubleMapQuery extends Query with Directives {
 
   type QP = MapQueryParameters
-  type QR[+T] = Out[T]
 
-  def leftPipe:ServicePipe[MapDataService]{type Out[T] = QR[T]}
+  def leftPipe:ServicePipe[MapDataService, Out]
 
-  def rightPipe:ServicePipe[MapDataService]{type Out[T] = QR[T]}
+  def rightPipe:ServicePipe[MapDataService, Out]
 
   def execute = {
     case Get(key) =>

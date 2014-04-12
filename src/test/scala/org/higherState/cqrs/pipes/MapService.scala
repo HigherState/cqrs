@@ -2,7 +2,7 @@ package org.higherState.cqrs.pipes
 
 import org.higherState.cqrs._
 
-trait MapService extends CqrsService {
+trait MapService[R[_]] extends CqrsService[R] {
 
   type C = MapCommand
   type QP = MapQueryParameters

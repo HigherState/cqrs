@@ -2,8 +2,8 @@ package org.higherState.cqrs.pipes
 
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
+import org.higherState.cqrs._
 import org.higherState.cqrs.identity.IdentityCqrsService
-import org.higherState.cqrs.Repository
 import scala.collection.mutable
 import org.higherState.cqrs.directives.IdentityDirectives
 
@@ -11,30 +11,29 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
 
   test("Double pipes") {
 
-    val service = new MapService with IdentityCqrsService {
+    val service = new MapService[Identity] with IdentityCqrsService {
 
-      val left = new mutable.HashMap[Int,String] with MapDataService with Repository
-      val right = new mutable.HashMap[Int,String] with MapDataService with Repository
+      val left = new mutable.HashMap[Int,String] with MapDataService[Identity]
+      val right = new mutable.HashMap[Int,String] with MapDataService[Identity]
 
       def query = new DoubleMapQuery with IdentityDirectives {
 
-        def leftPipe = new ServicePipe[MapDataService] with IdentityPipe {
+        def leftPipe = new ServicePipe[MapDataService, Identity] with IdentityPipe {
           def service = left
         }
 
-        def rightPipe = new ServicePipe[MapDataService] with IdentityPipe {
+        def rightPipe = new ServicePipe[MapDataService, Identity] with IdentityPipe {
           def service = right
         }
       }
 
-      def commandHandler = new DoubleMapCommandHandler {
+      def commandHandler = new DoubleMapCommandHandler with IdentityDirectives {
 
-        type CR[+T] = T
-        def leftPipe = new ServicePipe[MapDataService] with IdentityPipe {
+        def leftPipe = new ServicePipe[MapDataService, Identity] with IdentityPipe {
           def service = left
         }
 
-        def rightPipe = new ServicePipe[MapDataService] with IdentityPipe {
+        def rightPipe = new ServicePipe[MapDataService, Identity] with IdentityPipe {
           def service = right
         }
       }

@@ -9,11 +9,10 @@ import org.scalatest.concurrent.ScalaFutures
 class TypeTest extends  FunSuite with Matchers with ScalaFutures {
 
   test("ActorService") {
-    val a = new WithBase {
-
-      type R[+T] = T
-      def base = new Identity{}
-    }
+    val t = new Option2{}
+    val i = new Identity2{}
+    t.result(3)
+    i.result(3)
   }
 }
 
@@ -25,7 +24,7 @@ trait Base {
   def result[T](t:T):A[T]
 }
 
-trait Identity extends Base {
+trait Identity1 extends Base {
 
   type A[+T] = T
 
@@ -47,13 +46,19 @@ trait WithBase {
   def apply[T](t:T) =
     base.result(t)
 }
-//
-//trait Base2[A[+T]] {
-//  def result[T](t:T):A[T]
-//}
-//
-//trait Identity2 extends Base2{type A[+T] = T} {
-//
-//  def result[T](t: T): A[T] = t
-//}
+
+trait Base2[A[_]] {
+  def result[T](t:T):A[T]
+}
+
+trait Identity2 extends Base2[Identity] {
+  def result[T](t: T): T = t
+}
+
+trait Option2 extends Base2[Option] {
+
+  def result[T](t: T): Option[T] = Some(t)
+}
+
+
 

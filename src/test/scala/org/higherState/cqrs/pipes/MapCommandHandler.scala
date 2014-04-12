@@ -4,9 +4,8 @@ import org.higherState.cqrs.CommandHandler
 
 trait MapCommandHandler extends CommandHandler with Pipe {
 
-  def service:MapDataService{type R[+T]= In[T]}
+  def service:MapDataService[In]
 
-  type CR[+T] = Out[T]
   type C = MapCommand
 
   def handle = {

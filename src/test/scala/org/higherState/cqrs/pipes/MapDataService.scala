@@ -2,7 +2,7 @@ package org.higherState.cqrs.pipes
 
 import org.higherState.cqrs.Service
 
-trait MapDataService extends Service {
+trait MapDataService[R[_]] extends Service[R] {
 
   def get(key:Int):R[Option[String]]
 

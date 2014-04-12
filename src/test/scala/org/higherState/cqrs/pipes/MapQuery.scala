@@ -4,10 +4,9 @@ import org.higherState.cqrs.Query
 
 trait MapQuery extends Query with Pipe {
 
-  def service:MapDataService{type R[T] = In[T]}
+  def service:MapDataService[In]
 
   type QP = MapQueryParameters
-  type QR[+T] = Out[T]
 
   def execute = {
     case Get(key) =>

@@ -1,13 +1,10 @@
 package org.higherState.cqrs
 
 import scala.reflect.ClassTag
-import scala.concurrent.Future
 
-trait Service {
-  type R[+T]
-}
+trait Service[R[_]]
 
-trait CqrsService extends Service {
+trait CqrsService[R[_]] extends Service[R] {
 
   type C <: Command
   type QP <: QueryParameters
@@ -16,8 +13,3 @@ trait CqrsService extends Service {
 
   protected def executeQuery[T:ClassTag](qp: => QP):R[T]
 }
-
-trait Repository extends Service {
-  type R[+T] = T
-}
-

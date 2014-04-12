@@ -1,9 +1,10 @@
 package org.higherState.authentication
 
+import org.higherState.cqrs._
 import org.higherState.cqrs.Service
 import scala.collection.mutable
 
-trait AuthenticationRepository extends Service {
+trait AuthenticationRepository[R[_]] extends Service[R] {
 
   def getUserCredentials(userLogin:UserLogin):R[Option[UserCredentials]]
 
@@ -24,19 +25,17 @@ trait AuthenticationRepository extends Service {
 
 }
 
-trait InMemoryAuthenticationRepository extends AuthenticationRepository {
-
-  type R[+T] = T
+trait InMemoryAuthenticationRepository extends AuthenticationRepository[Identity] {
 
   def state:mutable.Map[UserLogin, UserCredentials]
 
-  def getUserCredentials(userLogin:UserLogin):R[Option[UserCredentials]] =
+  def getUserCredentials(userLogin:UserLogin):Option[UserCredentials] =
     state.get(userLogin)
 
-  def getLockedUserLogins:R[TraversableOnce[UserLogin]] =
+  def getLockedUserLogins:TraversableOnce[UserLogin] =
     state.values.filter(_.isLocked).map(_.userLogin)
 
-  def getUserCredentialsByToken(token:ResetToken):R[Option[UserCredentials]] =
+  def getUserCredentialsByToken(token:ResetToken):Option[UserCredentials] =
     state.values.find(p => p.token.exists(_ == token))
 
 

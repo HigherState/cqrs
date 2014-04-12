@@ -5,9 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import org.higherState.cqrs._
 
-trait Directives {
-
-  type Out[+T]
+trait Directives extends Output {
 
   def complete:Out[Unit] =
     result[Unit](Unit)

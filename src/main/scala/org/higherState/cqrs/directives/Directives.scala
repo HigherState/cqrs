@@ -4,7 +4,6 @@ import scalaz._
 import scala.concurrent.{ExecutionContext, Future}
 
 import org.higherState.cqrs._
-import org.higherState.cqrs.ValidationException
 
 trait Directives {
 
@@ -15,9 +14,8 @@ trait Directives {
 
   def result[T](value:T):Out[T]
   
-  //user shapeless
-  def merge[T,U,W](r1:Out[T],r2:Out[U])(f:(Out[T],Out[U]) => Out[W]):Out[W] =
-    f(r1,r2)
+  //use shapeless
+  def merge[T,U,W](r1:Out[T], r2:Out[U])(f:(T,U) => Out[W]):Out[W]
 }
 
 trait FailureDirectives extends Directives {
@@ -29,10 +27,10 @@ trait FailureDirectives extends Directives {
 
 trait ValidationDirectives extends FailureDirectives {
 
+  type Out[+T] = ValidationNel[ValidationFailure, T]
+
   def result[T](value: T): Out[T] =
     Success(value)
-
-  type Out[+T] = ValidationNel[ValidationFailure, T]
 
   def failure[T](failure: => ValidationFailure): Out[T] =
     Failure(NonEmptyList(failure))
@@ -40,6 +38,17 @@ trait ValidationDirectives extends FailureDirectives {
   def failures[T](failures: => NonEmptyList[ValidationFailure]):Out[T] =
     Failure(failures)
 
+  def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
+    r1 -> r2 match {
+      case (Success(s1), Success(s2)) =>
+        f(s1, s2)
+      case (Failure(f1), Failure(f2)) =>
+        Failure(f1.append(f2))
+      case (Failure(f1), _) =>
+        Failure(f1)
+      case (_, Failure(f2)) =>
+        Failure(f2)
+    }
 }
 
 trait IdentityDirectives extends Directives {
@@ -49,6 +58,8 @@ trait IdentityDirectives extends Directives {
   def result[T](value:T):Out[T] =
     value
 
+  def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
+    f(r1,r2)
 }
 
 trait FutureDirectives extends Directives {
@@ -59,6 +70,13 @@ trait FutureDirectives extends Directives {
 
   def result[T](value:T):Out[T] =
     Future.successful(value)
+
+  def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
+    r1.flatMap { fs1 =>
+        r2.flatMap { fs2 =>
+          f(fs1, fs2)
+        }
+    }
 }
 
 trait FutureValidationDirectives extends FailureDirectives {
@@ -66,6 +84,25 @@ trait FutureValidationDirectives extends FailureDirectives {
   implicit def executionContext:ExecutionContext
 
   type Out[+T] = Future[ValidationNel[ValidationFailure, T]]
+
+  def result[T](value:T):Out[T] =
+    Future.successful(Success(value))
+
+  def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
+    r1.flatMap{fs1 =>
+      r2.flatMap{fs2 =>
+        fs1 -> fs2 match {
+          case (Success(s1), Success(s2)) =>
+            f(s1, s2)
+          case (Failure(f1), Failure(f2)) =>
+            Future.successful(Failure(f1.append(f2)))
+          case (Failure(f1), _) =>
+            Future.successful(Failure(f1))
+          case (_, Failure(f2)) =>
+            Future.successful(Failure(f2))
+        }
+      }
+    }
 
   def failure[T](failure: => ValidationFailure) =
     Future.successful(Failure(NonEmptyList(failure)))

@@ -6,7 +6,7 @@ trait Query {
 
   type QP <: QueryParameters
 
-  type R[+T]
+  type QR[+T]
 
-  def execute:Function[QP, R[Any]]
+  def execute:Function[QP, QR[Any]]
 }

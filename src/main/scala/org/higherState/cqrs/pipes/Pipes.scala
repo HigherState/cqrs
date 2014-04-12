@@ -87,9 +87,6 @@ trait FutureValidationPipe extends Pipe with FutureValidationDirectives {
         c
     })
 
-  def result[T](value: T) =
-    Future.successful(Success(value))
-
   def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
     value.flatMap{
       case Success(s) =>

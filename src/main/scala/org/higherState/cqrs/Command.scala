@@ -6,7 +6,7 @@ trait CommandHandler {
 
   type C <: Command
 
-  type R[+T]
+  type CR[+T]
 
-  def handle:Function[C, R[Unit]]
+  def handle:Function[C, CR[Unit]]
 }

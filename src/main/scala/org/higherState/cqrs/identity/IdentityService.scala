@@ -8,9 +8,9 @@ trait IdentityCqrsService extends CqrsService {
 
   type R[+T] = T
 
-  def commandHandler:CommandHandler{type C = s.C; type R[T] = s.R[T]}
+  def commandHandler:CommandHandler{type C = s.C; type CR[T] = R[T]}
 
-  def query:Query{type QP = s.QP; type R[T] = s.R[T]}
+  def query:Query{type QP = s.QP; type QR[T] = R[T]}
 
   protected def dispatchCommand(c: => C): R[Unit] = {
     commandHandler.handle(c)

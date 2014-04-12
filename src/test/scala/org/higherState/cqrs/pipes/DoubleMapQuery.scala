@@ -6,11 +6,11 @@ import org.higherState.cqrs.directives.Directives
 trait DoubleMapQuery extends Query with Directives {
 
   type QP = MapQueryParameters
+  type QR[+T] = Out[T]
 
-  def leftPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
+  def leftPipe:ServicePipe[MapDataService]{type Out[T] = QR[T]}
 
-  def rightPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
-
+  def rightPipe:ServicePipe[MapDataService]{type Out[T] = QR[T]}
 
   def execute = {
     case Get(key) =>
@@ -20,9 +20,10 @@ trait DoubleMapQuery extends Query with Directives {
         },
         rightPipe {
           p => p.success(p.service.get(key))
-        }){(l,r) =>
-        l.orElse(r)
-      }
+        })
+        {(l,r) =>
+          result(l.orElse(r))
+        }
     case Values =>
       merge(
         leftPipe{ p =>
@@ -31,7 +32,7 @@ trait DoubleMapQuery extends Query with Directives {
         rightPipe{ p =>
           p.success(p.service.values)
         }){(l:TraversableOnce[String],r:TraversableOnce[String]) =>
-        l.toIterator ++ r.toIterator
+        result((l.toIterator ++ r.toIterator).toList)
       }
 
   }

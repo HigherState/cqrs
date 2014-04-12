@@ -7,7 +7,7 @@ trait MapQuery extends Query with Pipe {
   def service:MapDataService{type R[T] = In[T]}
 
   type QP = MapQueryParameters
-  type R[+T] = Out[T]
+  type QR[+T] = Out[T]
 
   def execute = {
     case Get(key) =>

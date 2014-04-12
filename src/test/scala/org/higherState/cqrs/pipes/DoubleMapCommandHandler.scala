@@ -6,9 +6,9 @@ trait DoubleMapCommandHandler extends CommandHandler {
 
   type C = MapCommand
 
-  def leftPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
+  def leftPipe:ServicePipe[MapDataService]{type Out[T] = CR[T]}
 
-  def rightPipe:ServicePipe[MapDataService]{type Out[T] = R[T]}
+  def rightPipe:ServicePipe[MapDataService]{type Out[T] = CR[T]}
 
   def handle = {
     case Put(key, value) =>

@@ -9,7 +9,6 @@ trait Pipe extends Directives {
 
   type In[+T]
 
-
   def success[T](value: => In[T]):Out[T] =
     onSuccess[T,T](value)(t => result(t))
 
@@ -21,9 +20,8 @@ trait Pipe extends Directives {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
-trait ServicePipe[S[_], U[+_]] extends Pipe {
-  def service:S[In[_]]
-  type Out[+T] = U[T]
+trait ServicePipe[S[_[_]]] extends Pipe {
+  def service:S[In]
 
   def apply[T](f:this.type => Out[T]) =
     f(this)

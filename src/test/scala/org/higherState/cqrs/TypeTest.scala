@@ -2,62 +2,128 @@ package org.higherState.cqrs
 
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by Jamie Pullar on 12/04/2014.
  */
 class TypeTest extends  FunSuite with Matchers with ScalaFutures {
 
-  test("ActorService") {
-    val t = new Option2{}
-    val i = new Identity2{}
-    t.result(3)
-    i.result(3)
+  test("Abstract type only") {
+    val w = new ExtendedWired {
+      def get = Some(4)
+
+      type W[+T] = Option[T]
+    }
+    val j = new Join {
+      type In[+T] = Option[T]
+      type Out[+T] = Try[T]
+      type Wire = ExtendedWired
+
+      def convert[T](i: In[T]): Out[T] =
+        i.map(Success(_)).getOrElse(Failure(new Exception("Not found")))
+
+      def wired = w
+    }
+
+    val b = new ExtendedBase {
+      type Result[+T] = Try[T]
+      def join = j
+    }
+    b.result should equal (Success(4))
+  }
+
+  test("With Parameter type test") {
+    val w = new ExtendedWiredParam[Option] {
+      def get = Some(4)
+    }
+    val j = new JoinParam[ExtendedWiredParam] {
+      type In[+T] = Option[T]
+      type Out[+T] = Try[T]
+
+      def wired = w
+
+      def convert[T](i: In[T]) =
+        i.map(Success(_)).getOrElse(Failure(new Exception("Not found")))
+    }
+    val b = new ExtendedBaseParam {
+      type Result[+T] = Try[T]
+      def join = j
+    }
+
+    b.result should equal (Success(4))
   }
 }
 
 
 trait Base {
 
-  type A[+T]
+  type Result[+T]
 
-  def result[T](t:T):A[T]
+  def join:Join{type Out[+T] = Result[T]}
 }
 
-trait Identity1 extends Base {
+trait Join {
+  type In[+T]
+  type Out[+T]
+  type Wire <: Wired
 
-  type A[+T] = T
+  def wired:Wire{type W[+T] = In[T]}
 
-  def result[T](t: T): A[T] = t
+  def apply[T](f:this.type => Out[T]) =
+    f(this)
+
+  def convert[T](i:In[T]):Out[T]
 }
 
-trait Options extends Base {
-
-  type A[+T] = Option[T]
-
-  def result[T](t: T): A[T] = Some(t)
+trait Wired {
+  type W[+T]
 }
 
-trait WithBase {
 
-  type R[+T]
-  def base:Base{type A[+T] = R[T]}
-
-  def apply[T](t:T) =
-    base.result(t)
+trait ExtendedWired extends Wired {
+  def get:W[Int]
 }
 
-trait Base2[A[_]] {
-  def result[T](t:T):A[T]
+trait ExtendedBase extends Base {
+
+  def join:Join{type Out[+T] = Result[T];type Wire = ExtendedWired}
+
+  def result = join { j =>
+    j.convert(j.wired.get)
+  }
 }
 
-trait Identity2 extends Base2[Identity] {
-  def result[T](t: T): T = t
+trait BaseParam[W[T[+_]] <: WiredParam[T]]  {
+
+  type Result[+T]
+
+  def join:JoinParam[W]{type Out[+T] = Result[T]}
 }
 
-trait Option2 extends Base2[Option] {
+trait JoinParam[W[T[+_]] <: WiredParam[T]] {
+  type In[+T]
+  type Out[+T]
 
-  def result[T](t: T): Option[T] = Some(t)
+  def wired:W[In]
+
+  def apply[T](f:this.type => Out[T]) =
+    f(this)
+
+  def convert[T](i:In[T]):Out[T]
+}
+
+trait WiredParam[W[+_]]
+
+trait ExtendedWiredParam[W[+_]] extends WiredParam[W] {
+  def get:W[Int]
+}
+
+trait ExtendedBaseParam extends BaseParam[ExtendedWiredParam] {
+
+  def result = join { j =>
+    j.convert(j.wired.get)
+  }
 }
 
 

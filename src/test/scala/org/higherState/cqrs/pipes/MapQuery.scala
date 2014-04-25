@@ -1,12 +1,8 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.Query
+import org.higherState.cqrs.{PipedService, Query}
 
-trait MapQuery extends Query with Pipe {
-
-  def service:MapDataService[In]
-
-  type QP = MapQueryParameters
+trait MapQuery extends Query[MapQueryParameters] with PipedService[MapDataService] {
 
   def execute = {
     case Get(key) =>

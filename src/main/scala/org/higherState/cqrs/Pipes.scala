@@ -1,13 +1,11 @@
-package org.higherState.cqrs.pipes
+package org.higherState.cqrs
 
-import org.higherState.cqrs.{Identity, ValidationFailure, Service}
-import org.higherState.cqrs.directives._
 import scala.concurrent.{Future, ExecutionContext}
-import scalaz.{Success, Failure, ValidationNel}
+import scalaz.ValidationNel
+import scalaz.Success
+import scalaz.Failure
 
-trait Pipe extends Directives {
-
-  type In[+T]
+trait Pipe extends Directives with Input {
 
   def success[T](value: => In[T]):Out[T] =
     onSuccess[T,T](value)(t => result(t))
@@ -20,16 +18,7 @@ trait Pipe extends Directives {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
-trait ServicePipe[S[_[_]]] extends Pipe {
-  def service:S[In]
-
-  def apply[T](f:this.type => Out[T]) =
-    f(this)
-}
-
-trait IdentityPipe extends Pipe with IdentityDirectives {
-
-  type In[+T] = Identity[T]
+trait IdentityPipe extends Pipe with IdentityDirectives with Input.Identity {
 
   def onSuccess[S, T](value:Out[S])(f : (S) => In[T]) =
     f(value)
@@ -38,11 +27,9 @@ trait IdentityPipe extends Pipe with IdentityDirectives {
     complete
 }
 
-trait FuturePipe extends Pipe with FutureDirectives {
+trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
 
   implicit def executionContext:ExecutionContext
-
-  type In[+T] = Future[T]
 
   def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
     value.flatMap(f)
@@ -51,9 +38,7 @@ trait FuturePipe extends Pipe with FutureDirectives {
     Future.sequence(func).map(t => Unit)
 }
 
-trait ValidationPipe extends Pipe with FailureDirectives {
-
-  type In[+T] = ValidationNel[ValidationFailure, T]
+trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
     func.toIterator.collect {
@@ -72,9 +57,7 @@ trait ValidationPipe extends Pipe with FailureDirectives {
     }
 }
 
-trait FutureValidationPipe extends Pipe with FutureValidationDirectives {
-
-  type In[+T] = Future[ValidationNel[ValidationFailure, T]]
+trait FutureValidationPipe extends Pipe with FutureValidationDirectives with Input.FutureValid {
 
   def foreach(func:TraversableOnce[In[Unit]]):Out[Unit] =
     Future.sequence(func).map(_.foldLeft[ValidationNel[ValidationFailure, Unit]](Success(Unit)) {

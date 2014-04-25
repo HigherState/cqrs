@@ -1,12 +1,11 @@
-package org.higherState.cqrs.akka
+package org.higherState.cqrs
 
-import akka.actor.PoisonPill
-import org.higherState.cqrs.{Query, CommandHandler, Message}
+import _root_.akka.actor.PoisonPill
 import scala.concurrent.{ExecutionContext, Future}
 
 trait ActorWrapper extends akka.actor.Actor {
 
-  import akka.pattern.pipe
+  import _root_.akka.pattern.pipe
 
   implicit def executionContext:ExecutionContext
 
@@ -26,21 +25,21 @@ trait ActorWrapper extends akka.actor.Actor {
 
   val commandQuery:PartialFunction[Message, Any] =
     this match {
-      case cq:CommandHandler with Query =>
+      case cq:CommandHandler[Command] with Query[QueryParameters] =>
       {
-        case c:cq.C =>
+        case c:Command =>
           cq.handle(c)
-        case qp:cq.QP =>
+        case qp:QueryParameters =>
           cq.execute(qp)
       }
-      case ch:CommandHandler =>
+      case ch:CommandHandler[Command] =>
       {
-        case c:ch.C =>
+        case c:Command =>
           ch.handle(c)
       }
-      case q:Query =>
+      case q:Query[QueryParameters] =>
       {
-        case qp:q.QP =>
+        case qp:QueryParameters =>
           q.execute(qp)
       }
 

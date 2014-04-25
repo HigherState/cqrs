@@ -1,6 +1,6 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.directives.ValidationDirectives
+import org.higherState.cqrs.ValidationDirectives
 
 //trait AuthenticationDirectives extends ValidationDirectives with Bridge {
 //  d =>

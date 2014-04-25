@@ -1,10 +1,8 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.CommandHandler
+import org.higherState.cqrs.{PipedService, CommandHandler}
 
-trait MapCommandHandler extends CommandHandler with Pipe {
-
-  def service:MapDataService[In]
+trait MapCommandHandler extends CommandHandler[MapCommand] with PipedService[MapDataService] {
 
   type C = MapCommand
 

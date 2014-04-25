@@ -16,9 +16,10 @@ trait WiredPipes extends Directives {
 
   trait WiredService[S[R[+_]] <: Service[R]] extends Pipe {
     def service:S[In]
+    type Out[+T] <: w.Out[T]
 
-    def apply[T](f:this.type => Out[T]):w.Out[T] =
-      f(this).asInstanceOf[w.Out[T]]
+    def apply[T](f:this.type => Out[T]):Out[T] =
+      f(this)
   }
 }
 

@@ -9,6 +9,9 @@ import scala.util.{Failure, Success, Try}
  */
 class TypeTest extends  FunSuite with Matchers with ScalaFutures {
 
+  test("Mixin abstracted types test") {
+
+  }
   test("Abstract type only") {
     val w = new ExtendedWired {
       def get = Some(4)
@@ -126,5 +129,24 @@ trait ExtendedBaseParam extends BaseParam[ExtendedWiredParam] {
   }
 }
 
+trait HasType {
+  type A[+T]
+}
+
+trait OptionType1 extends HasType {
+  type Option[+T]
+}
+
+trait OptionType2 extends HasType {
+  type Option[+T]
+}
+
+
+trait WithNestedHasType[W[+_]] {
+
+  trait NestedHasType extends HasType {
+    type A[+T] <: W[T]
+  }
+}
 
 

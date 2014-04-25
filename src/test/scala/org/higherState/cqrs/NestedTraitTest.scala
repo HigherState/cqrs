@@ -18,10 +18,7 @@ class NestedTraitTest extends FunSuite with Matchers with ScalaFutures {
     }
     impl.three.get should equal(3)
   }
-
 }
-
-
 
 trait Test1 extends Level1 {
 

@@ -4,28 +4,28 @@ import org.higherState.cqrs._
 import org.higherState.cqrs.Service
 import scala.collection.mutable
 
-trait AuthenticationRepository[R[_]] extends Service[R] {
+trait AuthenticationRepository extends Service {
 
-  def getUserCredentials(userLogin:UserLogin):R[Option[UserCredentials]]
+  def getUserCredentials(userLogin:UserLogin):Out[Option[UserCredentials]]
 
-  def getLockedUserLogins:R[TraversableOnce[UserLogin]]
+  def getLockedUserLogins:Out[TraversableOnce[UserLogin]]
 
-  def getUserCredentialsByToken(token:ResetToken):R[Option[UserCredentials]]
+  def getUserCredentialsByToken(token:ResetToken):Out[Option[UserCredentials]]
 
 
-  def addUserCredentials(userCredentials:UserCredentials):R[Unit]
+  def addUserCredentials(userCredentials:UserCredentials):Out[Unit]
 
-  def setPassword(userLogin:UserLogin, password:Password, resetRequired:Boolean):R[Unit]
+  def setPassword(userLogin:UserLogin, password:Password, resetRequired:Boolean):Out[Unit]
 
-  def setToken(userLogin:UserLogin, token:ResetToken):R[Unit]
+  def setToken(userLogin:UserLogin, token:ResetToken):Out[Unit]
 
-  def setLock(userLogin:UserLogin, isLocked:Boolean):R[Unit]
+  def setLock(userLogin:UserLogin, isLocked:Boolean):Out[Unit]
 
-  def deleteUser(userLogin:UserLogin):R[Unit]
+  def deleteUser(userLogin:UserLogin):Out[Unit]
 
 }
 
-trait InMemoryAuthenticationRepository extends AuthenticationRepository[Identity] {
+trait InMemoryAuthenticationRepository extends AuthenticationRepository with Output.Identity {
 
   def state:mutable.Map[UserLogin, UserCredentials]
 

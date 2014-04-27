@@ -4,8 +4,13 @@ import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
 import org.higherState.cqrs._
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import akka.actor.ActorSystem
+import akka.util.Timeout
 
 class PipesTests extends FunSuite with Matchers with ScalaFutures {
+
+  import scala.concurrent.duration._
 
   test("Double pipes") {
 
@@ -43,4 +48,67 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
     service.values should equal(List("four", "five"))
   }
 
+  test("ActorFuture double pipes") {
+    val system = ActorSystem("System")
+
+    val service = new MapService[Future] with AkkaCqrs {
+
+      implicit def timeout: Timeout = 45.seconds
+      implicit def executionContext: ExecutionContext = system.dispatcher
+
+      val left = new FutureMapDataService
+      val right = new FutureMapDataService
+
+      protected val query =
+        getQueryRef("DoubleMap") { excctx =>
+          new DoubleMapQuery with ActorWrapper with FutureDirectives {
+
+            implicit def executionContext: ExecutionContext = excctx
+
+            def leftPipe = new WiredService[MapDataService] with FuturePipe {
+
+              implicit def executionContext: ExecutionContext = excctx
+              def service = left
+            }
+
+            def rightPipe = new WiredService[MapDataService] with FuturePipe {
+
+              implicit def executionContext: ExecutionContext = excctx
+              def service = right
+            }
+          }
+        }
+
+      protected val commandHandler =
+        getCommandHandlerRef("DoubleMap") { excctx =>
+          new DoubleMapCommandHandler with ActorWrapper with FutureDirectives {
+
+            implicit def executionContext: ExecutionContext = excctx
+
+            def leftPipe = new WiredService[MapDataService] with FuturePipe {
+
+              implicit def executionContext: ExecutionContext = excctx
+              def service = left
+            }
+
+            def rightPipe = new WiredService[MapDataService] with FuturePipe {
+
+              implicit def executionContext: ExecutionContext = excctx
+              def service = right
+            }
+          }
+        }
+    }
+
+    whenReady(service.put(4, "four")) { u =>
+      whenReady(service.put(6, "five")) { u =>
+        whenReady(service.get(4)) {s =>
+          s should equal(Some("four"))
+          whenReady(service.values) {l =>
+            l should equal(List("four", "five"))
+          }
+        }
+      }
+    }
+  }
 }

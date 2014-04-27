@@ -73,24 +73,24 @@ case object MapIdentityService extends MapService[Identity] with IdentityCqrs {
 }
 
 case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService[Future] with AkkaCqrs {
-  parent =>
+
   val state = new mutable.HashMap[Int,String] with MapDataService[Identity]
 
   protected val commandHandler: ActorRef =
-    getCommandHandlerRef("Map") {
+    getCommandHandlerRef("Map") { excctx =>
       new MapCommandHandler with ActorWrapper with IdentityPipe {
         def service = state
 
-        implicit def executionContext: ExecutionContext = parent.executionContext
+        implicit def executionContext: ExecutionContext = excctx
       }
     }
 
   protected val query: ActorRef =
-    getQueryRef("Map") {
+    getQueryRef("Map") { excctx =>
       new MapQuery with ActorWrapper with IdentityPipe {
         def service = state
 
-        implicit def executionContext: ExecutionContext = parent.executionContext
+        implicit def executionContext: ExecutionContext = excctx
       }
     }
 }
@@ -109,24 +109,24 @@ class FutureMapDataService(implicit executionContext:ExecutionContext) extends M
 }
 
 case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService[Future] with AkkaCqrs {
-  parent =>
+
   val futureService = new FutureMapDataService
 
   protected val commandHandler: ActorRef =
-    getCommandHandlerRef("Map") {
+    getCommandHandlerRef("Map") { excctx =>
       new MapCommandHandler with ActorWrapper with FuturePipe {
         def service = futureService
 
-        implicit def executionContext: ExecutionContext = parent.executionContext
+        implicit def executionContext: ExecutionContext = excctx
       }
     }
 
   protected val query: ActorRef =
-    getQueryRef("Map") {
+    getQueryRef("Map") { excctx =>
       new MapQuery with ActorWrapper with FuturePipe {
         def service = futureService
 
-        implicit def executionContext: ExecutionContext = parent.executionContext
+        implicit def executionContext: ExecutionContext = excctx
       }
     }
 }

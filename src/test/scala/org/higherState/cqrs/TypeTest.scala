@@ -4,9 +4,6 @@ import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
 import scala.util.{Failure, Success, Try}
 
-/**
- * Created by Jamie Pullar on 12/04/2014.
- */
 class TypeTest extends  FunSuite with Matchers with ScalaFutures {
 
   test("Mixin abstracted types test") {

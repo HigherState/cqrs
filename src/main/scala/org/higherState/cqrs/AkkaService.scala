@@ -3,7 +3,7 @@ package org.higherState.cqrs
 import akka.actor._
 import scala.reflect.ClassTag
 import scalaz._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait AkkaCqrs extends Cqrs with ActorRefBuilder {
 
@@ -47,24 +47,26 @@ trait AkkaValidationCqrs extends Cqrs with ActorRefBuilder {
 trait ActorRefBuilder extends Cqrs {
   arb =>
 
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](name:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  implicit def executionContext:ExecutionContext
+
+  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](name:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
           .child(s"CH-$name")
-          .getOrElse(context.actorOf(Props.apply(a), s"CH-$name"))
+          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"CH-$name"))
       case system:ActorSystem =>
-        system.actorOf(Props.apply(a), s"CH-$name")
+        system.actorOf(Props.apply(a(executionContext)), s"CH-$name")
     }
 
-  protected def getQueryRef[T <: akka.actor.Actor with Query[QP]](name:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getQueryRef[T <: akka.actor.Actor with Query[QP]](name:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
           .child(s"Q-$name")
-          .getOrElse(context.actorOf(Props.apply(a), s"Q-$name"))
+          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"Q-$name"))
       case system:ActorSystem =>
-        system.actorOf(Props.apply(a), s"Q-$name")
+        system.actorOf(Props.apply(a(executionContext)), s"Q-$name")
     }
 }
 

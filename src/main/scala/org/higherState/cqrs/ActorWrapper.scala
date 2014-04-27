@@ -5,7 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait ActorWrapper extends akka.actor.Actor {
 
-  import _root_.akka.pattern.pipe
+  import akka.pattern.pipe
 
   implicit def executionContext:ExecutionContext
 

@@ -2,10 +2,10 @@ package org.higherState.cqrs
 
 import scala.reflect.ClassTag
 
-trait Service[R[_]]
+trait Service extends Output
 
-trait PipedService[S[R[+_]] <: Service[R]] extends Pipe {
-  def service:S[In]
+trait PipedService[S <: Service] extends Pipe {
+  def service:S{type Out[+T] = In[T]}
 
   def apply[T](f:this.type => Out[T]) =
     f(this)
@@ -14,8 +14,8 @@ trait PipedService[S[R[+_]] <: Service[R]] extends Pipe {
 trait WiredPipes extends Directives {
   w =>
 
-  trait WiredService[S[R[+_]] <: Service[R]] extends Pipe {
-    def service:S[In]
+  trait WiredService[S <: Service] extends Pipe {
+    def service:S{type Out[+T] = In[T]}
     type Out[+T] <: w.Out[T]
 
     def apply[T](f:this.type => Out[T]):Out[T] =
@@ -30,17 +30,16 @@ trait Cqrs {
   type QP <: QueryParameters
 }
 
-trait CqrsService[R[_], _C <: Command, _QP <: QueryParameters] extends Service[R] with Cqrs {
+trait CqrsService[_C <: Command, _QP <: QueryParameters] extends Service with Cqrs {
 
   type C = _C
   type QP = _QP
-  protected def dispatchCommand(c: => C):R[Unit]
+  protected def dispatchCommand(c: => C):Out[Unit]
 
-  protected def executeQuery[T:ClassTag](qp: => QP):R[T]
+  protected def executeQuery[T:ClassTag](qp: => QP):Out[T]
 }
 
-trait IdentityCqrs extends Cqrs {
-  s =>
+trait IdentityCqrs extends Cqrs with Output.Identity {
 
   def commandHandler:CommandHandler[C] with Output.Identity
 

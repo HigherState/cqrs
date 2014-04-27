@@ -5,7 +5,6 @@ import akka.util.Timeout
 import scala.concurrent.ExecutionContext
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
-import scala.collection.mutable
 
 class MapTests extends FunSuite with Matchers with ScalaFutures {
 

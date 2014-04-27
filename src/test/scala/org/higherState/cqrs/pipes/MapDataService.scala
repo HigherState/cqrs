@@ -1,19 +1,19 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.Service
+import org.higherState.cqrs.{Output, Service}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.collection.mutable
 
-trait MapDataService[R[+_]] extends Service[R] {
+trait MapDataService extends Service {
 
-  def get(key:Int):R[Option[String]]
+  def get(key:Int):Out[Option[String]]
 
-  def values:R[TraversableOnce[String]]
+  def values:Out[TraversableOnce[String]]
 
-  def +=(kv: (Int, String)):R[this.type]
+  def +=(kv: (Int, String)):Out[this.type]
 }
 
-class FutureMapDataService(implicit executionContext:ExecutionContext) extends MapDataService[Future] {
+class FutureMapDataService(implicit executionContext:ExecutionContext) extends MapDataService with Output.Future {
   val state = new mutable.HashMap[Int,String]()
 
   def get(key: Int): Future[Option[String]] =

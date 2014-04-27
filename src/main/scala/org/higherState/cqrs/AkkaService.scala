@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 import scalaz._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait AkkaCqrs extends Cqrs with ActorRefBuilder {
+trait AkkaCqrs extends Cqrs with ActorRefBuilder with Output.Future {
 
   import akka.pattern.ask
   implicit def timeout:akka.util.Timeout
@@ -24,7 +24,7 @@ trait AkkaCqrs extends Cqrs with ActorRefBuilder {
       .mapTo[T]
 }
 
-trait AkkaValidationCqrs extends Cqrs with ActorRefBuilder {
+trait AkkaValidationCqrs extends Cqrs with ActorRefBuilder with Output.FutureValid {
 
   import akka.pattern.ask
   implicit def timeout:akka.util.Timeout

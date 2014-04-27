@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
 import org.higherState.cqrs._
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import akka.actor.ActorSystem
 import akka.util.Timeout
 
@@ -14,10 +14,10 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
 
   test("Double pipes") {
 
-    val service = new MapService[Identity] with IdentityCqrs {
+    val service = new MapService with IdentityCqrs {
 
-      val left = new mutable.HashMap[Int,String] with MapDataService[Identity]
-      val right = new mutable.HashMap[Int,String] with MapDataService[Identity]
+      val left = new mutable.HashMap[Int, String] with MapDataService with Output.Identity
+      val right = new mutable.HashMap[Int, String] with MapDataService with Output.Identity
 
       def query = new DoubleMapQuery with IdentityDirectives {
 
@@ -49,9 +49,9 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
   }
 
   test("ActorFuture double pipes") {
-    val system = ActorSystem("System")
+    implicit val system = ActorSystem("System")
 
-    val service = new MapService[Future] with AkkaCqrs {
+    val service = new MapService with AkkaCqrs {
 
       implicit def timeout: Timeout = 45.seconds
       implicit def executionContext: ExecutionContext = system.dispatcher

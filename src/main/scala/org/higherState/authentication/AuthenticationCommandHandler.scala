@@ -33,6 +33,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
             )
           )
         }
+        //publish token to event Publisher
       }
 
     case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>

@@ -6,7 +6,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
 
   def handle = {
     case CreateNewUser(userLogin, password) =>
-      uniqueCheck(userLogin) {
+      withValidUniqueLogin(userLogin) {
         onSuccessComplete{
           service.addUserCredentials(
             UserCredentials(
@@ -20,17 +20,55 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
         }
       }
     case CreateNewUserWithToken(userLogin) =>
-      uniqueCheck(userLogin) {
+      withValidUniqueLogin(userLogin) {
+        val token = ResetToken(java.util.UUID.randomUUID())
         onSuccessComplete{
           service.addUserCredentials(
             UserCredentials(
               userLogin,
-              Password(""),
+              Password.unSet,
               false,
-              false,
-              None
+              true,
+              Some(token)
             )
           )
+        }
+      }
+
+    case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>
+      withRequiredAuthenticatedCredentails(userLogin, currentPassword) { uc =>
+        onSuccessComplete{
+          service.setPassword(uc.userLogin, newPassword, false)
+        }
+      }
+
+    case UpdatePasswordWithToken(token, password) =>
+      withCredentialsByToken(token) { uc =>
+        onSuccessComplete{
+          service.setPassword(uc.userLogin, password, false)
+        }
+      }
+
+    case DeleteUser(userLogin) =>
+      withRequiredCredentials(userLogin) { uc =>
+        onSuccessComplete{
+          service.deleteUser(uc.userLogin)
+        }
+      }
+
+    case RequestResetToken(userLogin) =>
+      withRequiredCredentials(userLogin) { uc =>
+        val token = ResetToken(java.util.UUID.randomUUID())
+        onSuccess(service.setToken(userLogin, token)) { unit =>
+          //publish token to event Publisher
+          complete
+        }
+      }
+
+    case SetLock(userLogin, isLocked) =>
+      withRequiredCredentials(userLogin) { uc =>
+        onSuccessComplete{
+          service.setLock(userLogin, isLocked)
         }
       }
   }

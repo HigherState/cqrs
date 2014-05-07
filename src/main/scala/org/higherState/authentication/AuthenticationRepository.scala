@@ -15,7 +15,7 @@ trait AuthenticationRepository extends Service {
 
   def addUserCredentials(userCredentials:UserCredentials):Out[Unit]
 
-  def setPassword(userLogin:UserLogin, password:Password, resetRequired:Boolean):Out[Unit]
+  def setPassword(userLogin:UserLogin, password:Password, isResetRequired:Boolean):Out[Unit]
 
   def setToken(userLogin:UserLogin, token:ResetToken):Out[Unit]
 
@@ -43,9 +43,9 @@ trait InMemoryAuthenticationRepository extends AuthenticationRepository with Out
     state += userCredentials.userLogin -> userCredentials
   }
 
-  def setHash(userLogin:UserLogin, password:Password, isResetRequired:Boolean) {
+  def setPassword(userLogin:UserLogin, password:Password, isResetRequired:Boolean) {
     state.get(userLogin).map {uc =>
-      state += userLogin -> uc.copy(password = password, isResetRequired = isResetRequired)
+      state += userLogin -> uc.copy(password = password, isResetRequired = isResetRequired, token = None)
     }
   }
 

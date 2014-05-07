@@ -4,7 +4,16 @@ import java.util.UUID
 
 package object authentication {
 
-  case class Password(value:String) extends AnyVal
+  /* illustrative only, passwords not hashed*/
+  case class Password(value:String) extends AnyVal {
+    def isUnset = value.isEmpty
+
+    def isMatch(password:Password) =
+      !isUnset && password.value == value
+  }
+  object Password {
+    def unSet = Password("")
+  }
 
   case class UserLogin(value:String) extends AnyVal
 

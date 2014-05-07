@@ -22,7 +22,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
     case CreateNewUserWithToken(userLogin) =>
       withValidUniqueLogin(userLogin) {
         val token = ResetToken(java.util.UUID.randomUUID())
-        onSuccessComplete{
+        onSuccess(
           service.addUserCredentials(
             UserCredentials(
               userLogin,
@@ -32,8 +32,10 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
               Some(token)
             )
           )
+        ){ unit =>
+          //publish token to event Publisher
+          complete
         }
-        //publish token to event Publisher
       }
 
     case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>
@@ -68,7 +70,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
 
     case SetLock(userLogin, isLocked) =>
       withRequiredCredentials(userLogin) { uc =>
-        onSuccessComplete{
+        onSuccessComplete {
           service.setLock(userLogin, isLocked)
         }
       }

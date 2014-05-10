@@ -1,7 +1,5 @@
 package org.higherState.cqrs
 
-import scalaz._
-
 trait Output {
   type Out[+T]
 }

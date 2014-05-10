@@ -1,6 +1,6 @@
 package org.higherState.cqrs
 
-import _root_.akka.actor.{ActorRef, ActorRefFactory}
+import akka.actor.{ActorRef, ActorRefFactory}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 

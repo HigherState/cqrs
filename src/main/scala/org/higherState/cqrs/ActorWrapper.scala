@@ -1,17 +1,16 @@
 package org.higherState.cqrs
 
-import _root_.akka.actor.PoisonPill
 import scala.concurrent.{ExecutionContext, Future}
+import shapeless.TypeOperators._
 
+
+//requires executionContext even if CQ does return futures
+//Could look at <:!<  in shapeless to insure
 trait ActorWrapper extends akka.actor.Actor {
 
   import akka.pattern.pipe
 
   implicit def executionContext:ExecutionContext
-
-  def kill() {
-    self ! PoisonPill
-  }
 
   def receive = {
     case m:Message =>
@@ -44,37 +43,4 @@ trait ActorWrapper extends akka.actor.Actor {
       }
 
     }
-
-//  val validatorFunction:PartialFunction[Message, Valid[_]] =
-//    this match {
-//      case v:Validator =>
-//      {
-//        case m:Message =>
-//          v.validate.lift(m).collect {
-//            case head :: tail =>
-//              Failure(NonEmptyList(head, tail.toSeq:_*))
-//          }.getOrElse(commandQuery(m))
-//      }
-//      case _ =>
-//        commandQuery
-//    }
-
-//  val logger:PartialFunction[Message, Valid[_]] =
-//    this match {
-//      case l:Logger => {
-//        case m:Message =>
-//          l.log.apply(m)
-//          validatorFunction(m)
-//      }
-//      case _ =>
-//        validatorFunction
-//    }
-
-//  val handleMessage:PartialFunction[Message, Unit] =
-//    logger
-//      .andThen(v => sender ! v)
-//      .orElse {
-//      case m => throw UnexpectedMessageException(m)
-//    }
-
 }

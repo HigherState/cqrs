@@ -1,12 +1,10 @@
 package org.higherState.cqrs
 
 import scala.concurrent.{ExecutionContext, Future}
-import shapeless.TypeOperators._
-
 
 //requires executionContext even if CQ does return futures
-//Could look at <:!<  in shapeless to insure
-trait ActorWrapper extends akka.actor.Actor {
+//Unable to get =:!= to check on mixed in abstract types
+trait ActorWrapper extends akka.actor.Actor with Output {
 
   import akka.pattern.pipe
 
@@ -41,6 +39,5 @@ trait ActorWrapper extends akka.actor.Actor {
         case qp:QueryParameters =>
           q.execute(qp)
       }
-
     }
 }

@@ -34,7 +34,11 @@ trait MapDataService extends Service {
 
   def values:Out[TraversableOnce[String]]
 
+  def contains(key:Int):Out[Boolean]
+
   def +=(kv: (Int, String)):Out[this.type]
+
+  def -=(key:Int):Out[this.type]
 }
 
 trait MapCommandHandler extends CommandHandler[MapCommand] with PipedService[MapDataService] {
@@ -63,11 +67,11 @@ case object MapIdentityService extends MapService with IdentityCqrs {
 
   val state = new mutable.HashMap[Int,String] with MapDataService with Output.Identity
 
-  def query = new MapQuery with IdentityPipe {
+  def query = new MapQuery with IdentityPipe with IdentityDirectives {
     def service = state
   }
 
-  def commandHandler = new MapCommandHandler with IdentityPipe {
+  def commandHandler = new MapCommandHandler with IdentityPipe with IdentityDirectives {
     def service = state
   }
 }
@@ -78,7 +82,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") { excctx =>
-      new MapCommandHandler with ActorWrapper with IdentityPipe {
+      new MapCommandHandler with ActorWrapper with IdentityPipe with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -87,7 +91,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.
 
   protected val query: ActorRef =
     getQueryRef("Map") { excctx =>
-      new MapQuery with ActorWrapper with IdentityPipe {
+      new MapQuery with ActorWrapper with IdentityPipe with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -104,8 +108,14 @@ class FutureMapDataService(implicit executionContext:ExecutionContext) extends M
   def values: Future[TraversableOnce[String]] =
     Future(state.values)
 
+  def contains(key:Int):Future[Boolean] =
+    Future(state.contains(key))
+
   def +=(kv: (Int, String)):Future[this.type] =
     Future(state += kv).map(_ => this)
+
+  def -=(key:Int):Future[this.type] =
+    Future(state -= key).map(_ => this)
 }
 
 case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {

@@ -21,22 +21,22 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
 
       def query = new DoubleMapQuery with IdentityDirectives {
 
-        def leftPipe = new WiredService[MapDataService] with IdentityPipe {
+        def leftPipe = new PipedService[MapDataService] with IdentityPipe with IdentityDirectives {
           def service = left
         }
 
-        def rightPipe = new WiredService[MapDataService] with IdentityPipe {
+        def rightPipe = new PipedService[MapDataService] with IdentityPipe with IdentityDirectives {
           def service = right
         }
       }
 
       def commandHandler = new DoubleMapCommandHandler with IdentityDirectives {
 
-        def leftPipe = new WiredService[MapDataService] with IdentityPipe {
+        def leftPipe = new PipedService[MapDataService] with IdentityPipe with IdentityDirectives {
           def service = left
         }
 
-        def rightPipe = new WiredService[MapDataService] with IdentityPipe {
+        def rightPipe = new PipedService[MapDataService] with IdentityPipe with IdentityDirectives {
           def service = right
         }
       }
@@ -65,13 +65,13 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
 
             implicit def executionContext: ExecutionContext = excctx
 
-            def leftPipe = new WiredService[MapDataService] with FuturePipe {
+            def leftPipe = new PipedService[MapDataService] with FuturePipe {
 
               implicit def executionContext: ExecutionContext = excctx
               def service = left
             }
 
-            def rightPipe = new WiredService[MapDataService] with FuturePipe {
+            def rightPipe = new PipedService[MapDataService] with FuturePipe {
 
               implicit def executionContext: ExecutionContext = excctx
               def service = right
@@ -85,13 +85,13 @@ class PipesTests extends FunSuite with Matchers with ScalaFutures {
 
             implicit def executionContext: ExecutionContext = excctx
 
-            def leftPipe = new WiredService[MapDataService] with FuturePipe {
+            def leftPipe = new PipedService[MapDataService] with FuturePipe {
 
               implicit def executionContext: ExecutionContext = excctx
               def service = left
             }
 
-            def rightPipe = new WiredService[MapDataService] with FuturePipe {
+            def rightPipe = new PipedService[MapDataService] with FuturePipe {
 
               implicit def executionContext: ExecutionContext = excctx
               def service = right

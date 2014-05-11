@@ -1,6 +1,6 @@
 package org.higherState.cqrs
 
-import scalaz._
+import scalaz.{Failure, Success, NonEmptyList}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Directives extends Output {

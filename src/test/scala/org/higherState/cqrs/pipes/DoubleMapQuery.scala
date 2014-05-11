@@ -1,25 +1,18 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.{WiredPipes, Query}
+import org.higherState.cqrs.Query
 
-trait DoubleMapQuery extends Query[MapQueryParameters] with WiredPipes {
+trait DoubleMapQuery extends Query[MapQueryParameters] with DoubleMapDirectives {
 
-  def leftPipe:WiredService[MapDataService]
+  def leftPipe:PipedService[MapDataService]
 
-  def rightPipe:WiredService[MapDataService]
+  def rightPipe:PipedService[MapDataService]
 
   def execute = {
     case Get(key) =>
-      merge(
-        leftPipe{ p =>
-          p.success(p.service.get(key))
-        },
-        rightPipe {
-          p => p.success(p.service.get(key))
-        })
-        {(l,r) =>
-          result(l.orElse(r))
-        }
+      withPipe(key) { p =>
+        p.success(p.service.get(key))
+      }
     case Values =>
       merge(
         leftPipe{ p =>

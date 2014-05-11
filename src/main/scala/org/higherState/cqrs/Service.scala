@@ -14,12 +14,12 @@ trait PipedService[S <: Service] extends Pipe {
     f(this)
 }
 
-trait WiredPipes extends Directives {
-  w =>
+trait Pipes extends Directives {
+  container =>
 
-  trait WiredService[S <: Service] extends Pipe {
+  trait PipedService[S <: Service] extends Pipe {
     def service:S{type Out[+T] = In[T]}
-    type Out[+T] <: w.Out[T]
+    type Out[+T] <: container.Out[T]
 
     def apply[T](f:this.type => Out[T]):Out[T] =
       f(this)

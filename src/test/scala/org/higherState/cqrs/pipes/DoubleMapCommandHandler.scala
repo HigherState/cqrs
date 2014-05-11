@@ -1,26 +1,28 @@
 package org.higherState.cqrs.pipes
 
-import org.higherState.cqrs.{WiredPipes, CommandHandler}
+import org.higherState.cqrs.{Pipes, CommandHandler}
 
-trait DoubleMapCommandHandler extends CommandHandler[MapCommand] with WiredPipes {
+trait DoubleMapDirectives extends Pipes {
 
-  def leftPipe:WiredService[MapDataService]
+  def leftPipe:PipedService[MapDataService]
 
-  def rightPipe:WiredService[MapDataService]
+  def rightPipe:PipedService[MapDataService]
+
+  def withPipe[T](key:Int)(f:PipedService[MapDataService] => Out[T]) =
+    if (key.hashCode() % 2 == 0)
+      f(leftPipe)
+    else
+      f(rightPipe)
+}
+
+trait DoubleMapCommandHandler extends CommandHandler[MapCommand] with DoubleMapDirectives {
 
   def handle = {
     case Put(key, value) =>
-      if (key.hashCode() % 1 == 0)
-        leftPipe {p =>
-          p.onSuccessComplete {
-            p.service += key -> value
-          }
+      withPipe(key) { p =>
+        p.onSuccessComplete {
+          p.service += key -> value
         }
-      else
-        rightPipe { p =>
-          p.onSuccessComplete{
-            p.service += key -> value
-          }
-        }
+      }
   }
 }

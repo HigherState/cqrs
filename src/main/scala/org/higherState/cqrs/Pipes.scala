@@ -18,24 +18,13 @@ trait Pipe extends Directives with Input {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
-trait IdentityPipe extends Pipe with IdentityDirectives with Input.Identity {
+trait IdentityPipe extends Pipe with Input.Identity {
 
-  def onSuccess[S, T](value:Out[S])(f : (S) => In[T]) =
+  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]):Out[T] =
     f(value)
 
-  def foreach(func: => TraversableOnce[Out[Unit]]):In[Unit] =
-    complete
-}
-
-trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
-
-  implicit def executionContext:ExecutionContext
-
-  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
-    value.flatMap(f)
-
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
-    Future.sequence(func).map(t => Unit)
+    complete
 }
 
 trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
@@ -55,6 +44,17 @@ trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
       case Success(s) =>
         f(s)
     }
+}
+
+trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
+
+  implicit def executionContext:ExecutionContext
+
+  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
+    value.flatMap(f)
+
+  def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
+    Future.sequence(func).map(t => Unit)
 }
 
 trait FutureValidationPipe extends Pipe with FutureValidationDirectives with Input.FutureValid {

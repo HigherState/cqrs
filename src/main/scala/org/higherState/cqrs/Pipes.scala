@@ -18,6 +18,12 @@ trait Pipe extends Directives with Input {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
+trait ServicePipe[S <: Service] extends Pipe {
+  def service:S{type Out[+T] = In[T]}
+}
+
+
+/*Input fixed*/
 trait IdentityPipe extends Pipe with Input.Identity {
 
   def onSuccess[S, T](value:In[S])(f : (S) => Out[T]):Out[T] =
@@ -33,8 +39,7 @@ trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
     func.toIterator.collect {
       case Failure(f) => f
     }.reduceOption(_.append(_))
-      .map(f => failures[Unit](f))
-      .getOrElse(complete)
+      .fold(complete)(f => failures[Unit](f))
 
 
   def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
@@ -46,6 +51,8 @@ trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
     }
 }
 
+
+/*Input and output fixed*/
 trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
 
   implicit def executionContext:ExecutionContext

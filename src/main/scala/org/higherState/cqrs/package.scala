@@ -6,7 +6,7 @@ import scala.concurrent.Future
 package object cqrs {
 
   type Identity[+T] = T
-
+  //because typing traversableOnce all the time is a pain
   type Iter[+A] = TraversableOnce[A]
 
   type ValidationFailures = NonEmptyList[ValidationFailure]

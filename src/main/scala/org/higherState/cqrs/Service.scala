@@ -7,26 +7,6 @@ import scalaz._
 
 trait Service extends Output
 
-trait PipedService[S <: Service] extends Pipe {
-  def service:S{type Out[+T] = In[T]}
-
-  def apply[T](f:this.type => Out[T]) =
-    f(this)
-}
-
-trait Pipes extends Directives {
-  container =>
-
-  trait PipedService[S <: Service] extends Pipe {
-    def service:S{type Out[+T] = In[T]}
-    type Out[+T] <: container.Out[T]
-
-    def apply[T](f:this.type => Out[T]):Out[T] =
-      f(this)
-  }
-}
-
-
 sealed trait Cqrs extends Service {
 
   type C <: Command

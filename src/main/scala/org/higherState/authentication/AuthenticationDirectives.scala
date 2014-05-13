@@ -1,8 +1,8 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{PipedService, ValidationDirectives}
+import org.higherState.cqrs.{ServicePipe, ValidationDirectives}
 
-trait AuthenticationDirectives extends ValidationDirectives with PipedService[AuthenticationRepository] {
+trait AuthenticationDirectives extends ValidationDirectives with ServicePipe[AuthenticationRepository] {
 
   def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
     onSuccess(service.getUserCredentials(userLogin)) {
@@ -20,11 +20,14 @@ trait AuthenticationDirectives extends ValidationDirectives with PipedService[Au
         failure(UserCredentialsNotFoundFailure(userLogin))
     }
 
-  def withRequiredAuthenticatedCredentails[T](userLogin:UserLogin, password:Password)(f:UserCredentials => Out[T]):Out[T] =
+  def withRequiredAuthenticatedCredentials[T](userLogin:UserLogin, password:Password)(f:UserCredentials => Out[T]):Out[T] =
     withRequiredCredentials(userLogin) { uc =>
       if (uc.password.isMatch(password))
         f(uc)
-      else failure(InvalidPasswordFailure(userLogin))
+      else {
+        //Event publisher, publish failure of authentication
+        failure(InvalidPasswordFailure(userLogin))
+      }
     }
 
   def withCredentialsByToken[T](token:ResetToken)(f:UserCredentials => Out[T]):Out[T] =

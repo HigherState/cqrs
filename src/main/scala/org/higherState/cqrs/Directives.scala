@@ -14,6 +14,28 @@ trait Directives extends Output {
   def merge[T,U,W](r1:Out[T], r2:Out[U])(f:(T,U) => Out[W]):Out[W]
 }
 
+trait FailureDirectives extends Directives {
+
+  def failure[T](failure: => ValidationFailure):Out[T]
+
+  def failures[T](failed: => NonEmptyList[ValidationFailure]):Out[T]
+}
+
+trait ServicePipesDirectives extends Directives {
+  container =>
+
+  trait ServicePipe[S <: Service] extends Pipe {
+    def service:S{type Out[+T] = In[T]}
+    type Out[+T] <: container.Out[T]
+
+    def apply[T](f:this.type => Out[T]):Out[T] =
+      f(this)
+  }
+}
+
+
+
+/*Output fixed*/
 trait IdentityDirectives extends Directives with Output.Identity {
 
   def result[T](value:T):Out[T] =
@@ -21,13 +43,6 @@ trait IdentityDirectives extends Directives with Output.Identity {
 
   def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
     f(r1,r2)
-}
-
-trait FailureDirectives extends Directives {
-
-  def failure[T](failure: => ValidationFailure):Out[T]
-
-  def failures[T](failed: => NonEmptyList[ValidationFailure]):Out[T]
 }
 
 trait ValidationDirectives extends FailureDirectives with Output.Valid {

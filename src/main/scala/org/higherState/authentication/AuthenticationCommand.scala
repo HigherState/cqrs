@@ -18,4 +18,8 @@ case class RequestResetToken(userLogin:UserLogin) extends AuthenticationCommand
 
 case class SetLock(userLogin:UserLogin, isLocked:Boolean) extends AuthenticationCommand
 
+case class IncrementFailureCount(userLogin:UserLogin) extends AuthenticationCommand
+
+case class ResetFailureCount(userLogin:UserLogin) extends AuthenticationCommand
+
 

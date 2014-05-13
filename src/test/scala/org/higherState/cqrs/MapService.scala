@@ -14,7 +14,6 @@ trait MapService extends CqrsService[MapCommand, MapQueryParameters] {
 
   def put(key:Int, value:String):Out[Unit] =
     dispatchCommand(Put(key, value))
-
 }
 
 sealed trait MapQueryParameters extends QueryParameters
@@ -26,6 +25,7 @@ case object Values extends MapQueryParameters
 
 
 sealed trait MapCommand extends Command
+
 case class Put(key:Int, value:String) extends MapCommand
 
 trait MapDataService extends Service {
@@ -41,7 +41,7 @@ trait MapDataService extends Service {
   def -=(key:Int):Out[this.type]
 }
 
-trait MapCommandHandler extends CommandHandler[MapCommand] with PipedService[MapDataService] {
+trait MapCommandHandler extends CommandHandler[MapCommand] with ServicePipe[MapDataService] {
 
   def handle = {
     case Put(key, value) =>
@@ -51,7 +51,7 @@ trait MapCommandHandler extends CommandHandler[MapCommand] with PipedService[Map
   }
 }
 
-trait MapQuery extends Query[MapQueryParameters] with PipedService[MapDataService] {
+trait MapQuery extends Query[MapQueryParameters] with ServicePipe[MapDataService] {
 
   def execute = {
     case Get(key) =>
@@ -60,6 +60,56 @@ trait MapQuery extends Query[MapQueryParameters] with PipedService[MapDataServic
       onSuccess(service.values){l =>
         result(l.toList)
       }
+  }
+}
+
+trait DoubleMapDirectives extends ServicePipesDirectives {
+
+  def leftPipe:ServicePipe[MapDataService]
+
+  def rightPipe:ServicePipe[MapDataService]
+
+  def withPipe[T](key:Int)(f:ServicePipe[MapDataService] => Out[T]) =
+    if (key.hashCode() % 2 == 0)
+      f(leftPipe)
+    else
+      f(rightPipe)
+}
+
+trait DoubleMapCommandHandler extends CommandHandler[MapCommand] with DoubleMapDirectives {
+
+  def handle = {
+    case Put(key, value) =>
+      withPipe(key) { p =>
+        p.onSuccessComplete {
+          p.service += key -> value
+        }
+      }
+  }
+}
+
+trait DoubleMapQuery extends Query[MapQueryParameters] with DoubleMapDirectives {
+
+  def leftPipe:ServicePipe[MapDataService]
+
+  def rightPipe:ServicePipe[MapDataService]
+
+  def execute = {
+    case Get(key) =>
+      withPipe(key) { p =>
+        p.success(p.service.get(key))
+      }
+    case Values =>
+      merge(
+        leftPipe{ p =>
+          p.success(p.service.values)
+        },
+        rightPipe{ p =>
+          p.success(p.service.values)
+        }){(l:TraversableOnce[String],r:TraversableOnce[String]) =>
+        result((l.toIterator ++ r.toIterator).toList)
+      }
+
   }
 }
 
@@ -76,7 +126,36 @@ case object MapIdentityService extends MapService with IdentityCqrs {
   }
 }
 
-case class MapAkkaService(implicit factory:ActorRefFactory, timeout:_root_.akka.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
+case object DoubleMapIdentityService extends MapService with IdentityCqrs {
+
+  val left = new mutable.HashMap[Int, String] with MapDataService with Output.Identity
+  val right = new mutable.HashMap[Int, String] with MapDataService with Output.Identity
+
+  def query = new DoubleMapQuery with IdentityDirectives {
+
+    def leftPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+      def service = left
+    }
+
+    def rightPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+      def service = right
+    }
+  }
+
+  def commandHandler = new DoubleMapCommandHandler with IdentityDirectives {
+
+    def leftPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+      def service = left
+    }
+
+    def rightPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+      def service = right
+    }
+  }
+}
+
+
+case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
 
   val state = new mutable.HashMap[Int,String] with MapDataService with Output.Identity
 
@@ -123,7 +202,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
   val futureService = new FutureMapDataService
 
   protected val commandHandler: ActorRef =
-    getCommandHandlerRef("Map") { excctx =>
+    getCommandHandlerRef("FutureMap") { excctx =>
       new MapCommandHandler with ActorWrapper with FuturePipe {
         def service = futureService
 
@@ -132,11 +211,57 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
     }
 
   protected val query: ActorRef =
-    getQueryRef("Map") { excctx =>
+    getQueryRef("FutureMap") { excctx =>
       new MapQuery with ActorWrapper with FuturePipe {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = excctx
+      }
+    }
+}
+
+case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends  MapService with AkkaCqrs {
+
+  val left = new FutureMapDataService
+  val right = new FutureMapDataService
+
+  protected val query =
+    getQueryRef("DoubleMap") { excctx =>
+      new DoubleMapQuery with ActorWrapper with FutureDirectives {
+
+        implicit def executionContext: ExecutionContext = excctx
+
+        def leftPipe = new ServicePipe[MapDataService] with FuturePipe {
+
+          implicit def executionContext: ExecutionContext = excctx
+          def service = left
+        }
+
+        def rightPipe = new ServicePipe[MapDataService] with FuturePipe {
+
+          implicit def executionContext: ExecutionContext = excctx
+          def service = right
+        }
+      }
+    }
+
+  protected val commandHandler =
+    getCommandHandlerRef("DoubleMap") { excctx =>
+      new DoubleMapCommandHandler with ActorWrapper with FutureDirectives {
+
+        implicit def executionContext: ExecutionContext = excctx
+
+        def leftPipe = new ServicePipe[MapDataService] with FuturePipe {
+
+          implicit def executionContext: ExecutionContext = excctx
+          def service = left
+        }
+
+        def rightPipe = new ServicePipe[MapDataService] with FuturePipe {
+
+          implicit def executionContext: ExecutionContext = excctx
+          def service = right
+        }
       }
     }
 }

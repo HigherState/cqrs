@@ -53,18 +53,7 @@ class TypeTest extends  FunSuite with Matchers with ScalaFutures {
 
     b.result should equal (Success(4))
   }
-
-  test("Type equality") {
-    //should fail to compile...
-    val newNotFuture  = new NotFuture { type Out[+T] = scala.concurrent.Future[T] ; val ev = prf }
-  }
 }
-
-trait NotFuture {
-    type Out[+T]
-     val ev: Out[_] =:!= scala.concurrent.Future[_]
-     def prf(implicit ev: Out[_] =:!= scala.concurrent.Future[_]) = ev
-   }
 
 trait Base {
 

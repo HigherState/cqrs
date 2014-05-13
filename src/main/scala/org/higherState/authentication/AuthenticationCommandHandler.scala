@@ -4,6 +4,8 @@ import org.higherState.cqrs.CommandHandler
 
 trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand] with AuthenticationDirectives {
 
+  def maxNumberOfTries:Int
+
   def handle = {
     case CreateNewUser(userLogin, password) =>
       withValidUniqueLogin(userLogin) {
@@ -39,7 +41,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
       }
 
     case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>
-      withRequiredAuthenticatedCredentails(userLogin, currentPassword) { uc =>
+      withRequiredAuthenticatedCredentials(userLogin, currentPassword) { uc =>
         onSuccessComplete{
           service.setPassword(uc.userLogin, newPassword, false)
         }
@@ -74,5 +76,22 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
           service.setLock(userLogin, isLocked)
         }
       }
+
+    case IncrementFailureCount(userLogin) =>
+      onSuccess(service.getFailureCount(userLogin)) {
+        case Some(failureCount) =>
+          val newCount = failureCount + 1
+          onSuccess(service.setFailureCount(userLogin, newCount)) { unit =>
+            if (newCount == maxNumberOfTries)
+              onSuccessComplete(service.setLock(userLogin, true))
+            else
+              complete
+          }
+        case None =>
+          complete
+      }
+
+    case ResetFailureCount(userLogin) =>
+      onSuccessComplete(service.setFailureCount(userLogin, 0))
   }
 }

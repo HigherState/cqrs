@@ -24,7 +24,7 @@ trait FailureDirectives extends Directives {
 trait ServicePipesDirectives extends Directives {
   container =>
 
-  trait ServicePipe[S <: Service] extends Pipe {
+  trait ServicePipeDirectives[S <: Service] extends PipeDirectives {
     def service:S{type Out[+T] = In[T]}
     type Out[+T] <: container.Out[T]
 

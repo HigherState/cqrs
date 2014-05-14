@@ -1,8 +1,8 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ServicePipe, ValidationDirectives}
+import org.higherState.cqrs.{ServicePipeDirectives, ValidationDirectives}
 
-trait AuthenticationDirectives extends ValidationDirectives with ServicePipe[AuthenticationRepository] {
+trait AuthenticationDirectives extends ValidationDirectives with ServicePipeDirectives[AuthenticationRepository] {
 
   def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
     onSuccess(service.getUserCredentials(userLogin)) {

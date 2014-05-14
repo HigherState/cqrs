@@ -5,7 +5,7 @@ import scalaz.ValidationNel
 import scalaz.Success
 import scalaz.Failure
 
-trait Pipe extends Directives with Input {
+trait PipeDirectives extends Directives with Input {
 
   def success[T](value: => In[T]):Out[T] =
     onSuccess[T,T](value)(t => result(t))
@@ -18,13 +18,13 @@ trait Pipe extends Directives with Input {
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
 
-trait ServicePipe[S <: Service] extends Pipe {
+trait ServicePipeDirectives[S <: Service] extends PipeDirectives {
   def service:S{type Out[+T] = In[T]}
 }
 
 
 /*Input fixed*/
-trait IdentityPipe extends Pipe with Input.Identity {
+trait IdentityPipeDirectives extends PipeDirectives with Input.Identity {
 
   def onSuccess[S, T](value: => In[S])(f : (S) => Out[T]):Out[T] =
     f(value)
@@ -33,7 +33,7 @@ trait IdentityPipe extends Pipe with Input.Identity {
     complete
 }
 
-trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
+trait ValidationPipeDirectives extends PipeDirectives with FailureDirectives with Input.Valid {
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
     func.toIterator.collect {
@@ -53,7 +53,7 @@ trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
 
 
 /*Input and output fixed*/
-trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
+trait FuturePipeDirectives extends PipeDirectives with FutureDirectives with Input.Future {
 
   implicit def executionContext:ExecutionContext
 
@@ -64,7 +64,7 @@ trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
     Future.sequence(func).map(t => Unit)
 }
 
-trait FutureValidationPipe extends Pipe with FutureValidationDirectives with Input.FutureValid {
+trait FutureValidationPipeDirectives extends PipeDirectives with FutureValidationDirectives with Input.FutureValid {
 
   def foreach(func:TraversableOnce[In[Unit]]):Out[Unit] =
     Future.sequence(func).map(_.foldLeft[ValidationNel[ValidationFailure, Unit]](Success(Unit)) {

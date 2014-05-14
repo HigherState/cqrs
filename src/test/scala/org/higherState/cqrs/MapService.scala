@@ -41,7 +41,7 @@ trait MapDataService extends Service {
   def -=(key:Int):Out[this.type]
 }
 
-trait MapCommandHandler extends CommandHandler[MapCommand] with ServicePipe[MapDataService] {
+trait MapCommandHandler extends CommandHandler[MapCommand] with ServicePipeDirectives[MapDataService] {
 
   def handle = {
     case Put(key, value) =>
@@ -51,7 +51,7 @@ trait MapCommandHandler extends CommandHandler[MapCommand] with ServicePipe[MapD
   }
 }
 
-trait MapQuery extends Query[MapQueryParameters] with ServicePipe[MapDataService] {
+trait MapQuery extends Query[MapQueryParameters] with ServicePipeDirectives[MapDataService] {
 
   def execute = {
     case Get(key) =>
@@ -65,11 +65,11 @@ trait MapQuery extends Query[MapQueryParameters] with ServicePipe[MapDataService
 
 trait DoubleMapDirectives extends ServicePipesDirectives {
 
-  def leftPipe:ServicePipe[MapDataService]
+  def leftPipe:ServicePipeDirectives[MapDataService]
 
-  def rightPipe:ServicePipe[MapDataService]
+  def rightPipe:ServicePipeDirectives[MapDataService]
 
-  def withPipe[T](key:Int)(f:ServicePipe[MapDataService] => Out[T]) =
+  def withPipe[T](key:Int)(f:ServicePipeDirectives[MapDataService] => Out[T]) =
     if (key.hashCode() % 2 == 0)
       f(leftPipe)
     else
@@ -90,9 +90,9 @@ trait DoubleMapCommandHandler extends CommandHandler[MapCommand] with DoubleMapD
 
 trait DoubleMapQuery extends Query[MapQueryParameters] with DoubleMapDirectives {
 
-  def leftPipe:ServicePipe[MapDataService]
+  def leftPipe:ServicePipeDirectives[MapDataService]
 
-  def rightPipe:ServicePipe[MapDataService]
+  def rightPipe:ServicePipeDirectives[MapDataService]
 
   def execute = {
     case Get(key) =>
@@ -117,11 +117,11 @@ case object MapIdentityService extends MapService with IdentityCqrs {
 
   val state = new mutable.HashMap[Int,String] with MapDataService with Output.Identity
 
-  def query = new MapQuery with IdentityPipe with IdentityDirectives {
+  def query = new MapQuery with IdentityPipeDirectives with IdentityDirectives {
     def service = state
   }
 
-  def commandHandler = new MapCommandHandler with IdentityPipe with IdentityDirectives {
+  def commandHandler = new MapCommandHandler with IdentityPipeDirectives with IdentityDirectives {
     def service = state
   }
 }
@@ -133,22 +133,22 @@ case object DoubleMapIdentityService extends MapService with IdentityCqrs {
 
   def query = new DoubleMapQuery with IdentityDirectives {
 
-    def leftPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+    def leftPipe = new ServicePipeDirectives[MapDataService] with IdentityPipeDirectives with IdentityDirectives {
       def service = left
     }
 
-    def rightPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+    def rightPipe = new ServicePipeDirectives[MapDataService] with IdentityPipeDirectives with IdentityDirectives {
       def service = right
     }
   }
 
   def commandHandler = new DoubleMapCommandHandler with IdentityDirectives {
 
-    def leftPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+    def leftPipe = new ServicePipeDirectives[MapDataService] with IdentityPipeDirectives with IdentityDirectives {
       def service = left
     }
 
-    def rightPipe = new ServicePipe[MapDataService] with IdentityPipe with IdentityDirectives {
+    def rightPipe = new ServicePipeDirectives[MapDataService] with IdentityPipeDirectives with IdentityDirectives {
       def service = right
     }
   }
@@ -161,7 +161,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Ti
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") { excctx =>
-      new MapCommandHandler with ActorAdapter with IdentityPipe with IdentityDirectives {
+      new MapCommandHandler with ActorAdapter with IdentityPipeDirectives with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -170,7 +170,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Ti
 
   protected val query: ActorRef =
     getQueryRef("Map") { excctx =>
-      new MapQuery with ActorAdapter with IdentityPipe with IdentityDirectives {
+      new MapQuery with ActorAdapter with IdentityPipeDirectives with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -203,7 +203,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("FutureMap") { excctx =>
-      new MapCommandHandler with ActorAdapter with FuturePipe {
+      new MapCommandHandler with ActorAdapter with FuturePipeDirectives {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = excctx
@@ -212,7 +212,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
 
   protected val query: ActorRef =
     getQueryRef("FutureMap") { excctx =>
-      new MapQuery with ActorAdapter with FuturePipe {
+      new MapQuery with ActorAdapter with FuturePipeDirectives {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = excctx
@@ -231,13 +231,13 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
         implicit def executionContext: ExecutionContext = excctx
 
-        def leftPipe = new ServicePipe[MapDataService] with FuturePipe {
+        def leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = left
         }
 
-        def rightPipe = new ServicePipe[MapDataService] with FuturePipe {
+        def rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = right
@@ -251,13 +251,13 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
         implicit def executionContext: ExecutionContext = excctx
 
-        def leftPipe = new ServicePipe[MapDataService] with FuturePipe {
+        def leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = left
         }
 
-        def rightPipe = new ServicePipe[MapDataService] with FuturePipe {
+        def rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = right

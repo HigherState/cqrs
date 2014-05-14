@@ -15,6 +15,7 @@ sealed trait Cqrs extends Service {
   protected def dispatchCommand(c: => C):Out[Unit]
 
   protected def executeQuery[T:ClassTag](qp: => QP):Out[T]
+
 }
 
 trait CqrsService[_C <: Command, _QP <: QueryParameters] extends Cqrs {
@@ -83,24 +84,24 @@ trait ActorRefBuilder extends Cqrs {
 
   implicit def executionContext:ExecutionContext
 
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](name:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](serviceName:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
-          .child(s"CH-$name")
-          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"CH-$name"))
+          .child(s"CH-$serviceName")
+          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"CH-$serviceName"))
       case system:ActorSystem =>
-        system.actorOf(Props.apply(a(executionContext)), s"CH-$name")
+        system.actorOf(Props.apply(a(executionContext)), s"CH-$serviceName")
     }
 
-  protected def getQueryRef[T <: akka.actor.Actor with Query[QP]](name:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getQueryRef[T <: akka.actor.Actor with Query[QP]](serviceName:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
-          .child(s"Q-$name")
-          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"Q-$name"))
+          .child(s"Q-$serviceName")
+          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"Q-$serviceName"))
       case system:ActorSystem =>
-        system.actorOf(Props.apply(a(executionContext)), s"Q-$name")
+        system.actorOf(Props.apply(a(executionContext)), s"Q-$serviceName")
     }
 }
 

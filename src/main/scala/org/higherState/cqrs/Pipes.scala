@@ -13,7 +13,7 @@ trait Pipe extends Directives with Input {
   def onSuccessComplete[T](value: => In[T]):Out[Unit] =
     onSuccess[T, Unit](value)(t => complete)
 
-  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T]
+  def onSuccess[S, T](value: => In[S])(f : (S) => Out[T]): Out[T]
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit]
 }
@@ -26,7 +26,7 @@ trait ServicePipe[S <: Service] extends Pipe {
 /*Input fixed*/
 trait IdentityPipe extends Pipe with Input.Identity {
 
-  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]):Out[T] =
+  def onSuccess[S, T](value: => In[S])(f : (S) => Out[T]):Out[T] =
     f(value)
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
@@ -57,7 +57,7 @@ trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
 
   implicit def executionContext:ExecutionContext
 
-  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
+  def onSuccess[S, T](value: => In[S])(f : (S) => Out[T]): Out[T] =
     value.flatMap(f)
 
   def foreach(func: => TraversableOnce[In[Unit]]):Out[Unit] =
@@ -76,7 +76,7 @@ trait FutureValidationPipe extends Pipe with FutureValidationDirectives with Inp
         c
     })
 
-  def onSuccess[S, T](value:In[S])(f : (S) => Out[T]): Out[T] =
+  def onSuccess[S, T](value: => In[S])(f : (S) => Out[T]): Out[T] =
     value.flatMap{
       case Success(s) =>
         f(s)

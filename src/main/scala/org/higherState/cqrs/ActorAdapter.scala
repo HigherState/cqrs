@@ -4,7 +4,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 //requires executionContext even if CQ does return futures
 //Unable to get =:!= to check on mixed in abstract types
-trait ActorWrapper extends akka.actor.Actor with Output {
+trait ActorAdapter extends akka.actor.Actor with Output {
 
   import akka.pattern.pipe
 
@@ -29,12 +29,12 @@ trait ActorWrapper extends akka.actor.Actor with Output {
         case qp:QueryParameters =>
           cq.execute(qp)
       }
-      case ch:CommandHandler[Command] =>
+      case ch:CommandHandler[Command@unchecked] =>
       {
         case c:Command =>
           ch.handle(c)
       }
-      case q:Query[QueryParameters] =>
+      case q:Query[QueryParameters@unchecked] =>
       {
         case qp:QueryParameters =>
           q.execute(qp)

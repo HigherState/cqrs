@@ -8,7 +8,7 @@ trait Directives extends Output {
   def complete:Out[Unit] =
     result[Unit](Unit)
 
-  def result[T](value:T):Out[T]
+  def result[T](value: => T):Out[T]
   
   //use shapeless
   def merge[T,U,W](r1:Out[T], r2:Out[U])(f:(T,U) => Out[W]):Out[W]
@@ -38,7 +38,7 @@ trait ServicePipesDirectives extends Directives {
 /*Output fixed*/
 trait IdentityDirectives extends Directives with Output.Identity {
 
-  def result[T](value:T):Out[T] =
+  def result[T](value: => T):Out[T] =
     value
 
   def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
@@ -47,7 +47,7 @@ trait IdentityDirectives extends Directives with Output.Identity {
 
 trait ValidationDirectives extends FailureDirectives with Output.Valid {
 
-  def result[T](value: T): Out[T] =
+  def result[T](value: => T): Out[T] =
     Success(value)
 
   def failure[T](failure: => ValidationFailure): Out[T] =
@@ -73,7 +73,7 @@ trait FutureDirectives extends Directives with Output.Future {
 
   implicit def executionContext:ExecutionContext
 
-  def result[T](value:T):Out[T] =
+  def result[T](value: => T):Out[T] =
     Future.successful(value)
 
   def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =
@@ -88,7 +88,7 @@ trait FutureValidationDirectives extends FailureDirectives with Output.FutureVal
 
   implicit def executionContext:ExecutionContext
 
-  def result[T](value:T):Out[T] =
+  def result[T](value: => T):Out[T] =
     Future.successful(Success(value))
 
   def merge[T, U, W](r1: Out[T], r2: Out[U])(f: (T, U) => Out[W]): Out[W] =

@@ -161,7 +161,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Ti
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("Map") { excctx =>
-      new MapCommandHandler with ActorWrapper with IdentityPipe with IdentityDirectives {
+      new MapCommandHandler with ActorAdapter with IdentityPipe with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -170,7 +170,7 @@ case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Ti
 
   protected val query: ActorRef =
     getQueryRef("Map") { excctx =>
-      new MapQuery with ActorWrapper with IdentityPipe with IdentityDirectives {
+      new MapQuery with ActorAdapter with IdentityPipe with IdentityDirectives {
         def service = state
 
         implicit def executionContext: ExecutionContext = excctx
@@ -203,7 +203,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
 
   protected val commandHandler: ActorRef =
     getCommandHandlerRef("FutureMap") { excctx =>
-      new MapCommandHandler with ActorWrapper with FuturePipe {
+      new MapCommandHandler with ActorAdapter with FuturePipe {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = excctx
@@ -212,7 +212,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
 
   protected val query: ActorRef =
     getQueryRef("FutureMap") { excctx =>
-      new MapQuery with ActorWrapper with FuturePipe {
+      new MapQuery with ActorAdapter with FuturePipe {
         def service = futureService
 
         implicit def executionContext: ExecutionContext = excctx
@@ -227,7 +227,7 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
   protected val query =
     getQueryRef("DoubleMap") { excctx =>
-      new DoubleMapQuery with ActorWrapper with FutureDirectives {
+      new DoubleMapQuery with ActorAdapter with FutureDirectives {
 
         implicit def executionContext: ExecutionContext = excctx
 
@@ -247,7 +247,7 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
   protected val commandHandler =
     getCommandHandlerRef("DoubleMap") { excctx =>
-      new DoubleMapCommandHandler with ActorWrapper with FutureDirectives {
+      new DoubleMapCommandHandler with ActorAdapter with FutureDirectives {
 
         implicit def executionContext: ExecutionContext = excctx
 

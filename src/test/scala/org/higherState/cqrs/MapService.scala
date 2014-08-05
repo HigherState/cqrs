@@ -231,13 +231,13 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
         implicit def executionContext: ExecutionContext = excctx
 
-        def leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
+        val leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = left
         }
 
-        def rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
+        val rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = right
@@ -251,13 +251,13 @@ case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:
 
         implicit def executionContext: ExecutionContext = excctx
 
-        def leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
+        val leftPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = left
         }
 
-        def rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
+        val rightPipe = new ServicePipeDirectives[MapDataService] with FuturePipeDirectives {
 
           implicit def executionContext: ExecutionContext = excctx
           def service = right

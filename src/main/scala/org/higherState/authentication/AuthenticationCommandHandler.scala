@@ -9,8 +9,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
   def handle = {
     case CreateNewUser(userLogin, password) =>
       withValidUniqueLogin(userLogin) {
-        onSuccessComplete{
-          service.addUserCredentials(
+          servicePipe.transform(_.addUserCredentials(
             UserCredentials(
               userLogin,
               password,
@@ -19,13 +18,12 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
               None
             )
           )
-        }
+        )
       }
     case CreateNewUserWithToken(userLogin) =>
       withValidUniqueLogin(userLogin) {
         val token = ResetToken(java.util.UUID.randomUUID())
-        onSuccess(
-          service.addUserCredentials(
+        servicePipe.transform(_.addUserCredentials(
             UserCredentials(
               userLogin,
               Password.unSet,
@@ -34,56 +32,42 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
               Some(token)
             )
           )
-        ){ unit =>
-          //publish token to event Publisher
-          complete
-        }
+        )
       }
 
     case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>
       withRequiredAuthenticatedCredentials(userLogin, currentPassword) { uc =>
-        onSuccessComplete{
-          service.setPassword(uc.userLogin, newPassword, false)
-        }
+        servicePipe.transform(_.setPassword(uc.userLogin, newPassword, false))
       }
 
     case UpdatePasswordWithToken(token, password) =>
       withCredentialsByToken(token) { uc =>
-        onSuccessComplete{
-          service.setPassword(uc.userLogin, password, false)
-        }
+        servicePipe.transform(_.setPassword(uc.userLogin, password, false))
       }
 
     case DeleteUser(userLogin) =>
       withRequiredCredentials(userLogin) { uc =>
-        onSuccessComplete{
-          service.deleteUser(uc.userLogin)
-        }
+        servicePipe.transform(_.deleteUser(uc.userLogin))
       }
 
     case RequestResetToken(userLogin) =>
       withRequiredCredentials(userLogin) { uc =>
         val token = ResetToken(java.util.UUID.randomUUID())
-        onSuccess(service.setToken(userLogin, token)) { unit =>
-          //publish token to event Publisher
-          complete
-        }
+        servicePipe.transform(_.setToken(userLogin, token))
       }
 
     case SetLock(userLogin, isLocked) =>
       withRequiredCredentials(userLogin) { uc =>
-        onSuccessComplete {
-          service.setLock(userLogin, isLocked)
-        }
+        servicePipe.transform(_.setLock(userLogin, isLocked))
       }
 
     case IncrementFailureCount(userLogin) =>
-      onSuccess(service.getFailureCount(userLogin)) {
+      servicePipe(_.getFailureCount(userLogin)) {
         case Some(failureCount) =>
           val newCount = failureCount + 1
-          onSuccess(service.setFailureCount(userLogin, newCount)) { unit =>
+          servicePipe(_.setFailureCount(userLogin, newCount)) { unit =>
             if (newCount == maxNumberOfTries)
-              onSuccessComplete(service.setLock(userLogin, true))
+              servicePipe.transform(_.setLock(userLogin, true))
             else
               complete
           }
@@ -92,6 +76,6 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
       }
 
     case ResetFailureCount(userLogin) =>
-      onSuccessComplete(service.setFailureCount(userLogin, 0))
+      servicePipe.transform(_.setFailureCount(userLogin, 0))
   }
 }

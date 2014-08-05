@@ -1,11 +1,13 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ServicePipeDirectives, ValidationDirectives}
+import org.higherState.cqrs.{ServicePipesDirectives, ValidationDirectives}
 
-trait AuthenticationDirectives extends ValidationDirectives with ServicePipeDirectives[AuthenticationRepository] {
+trait AuthenticationDirectives extends ValidationDirectives with ServicePipesDirectives {
+
+  def servicePipe:ServicePipe[AuthenticationRepository]
 
   def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
-    onSuccess(service.getUserCredentials(userLogin)) {
+    servicePipe(_.getUserCredentials(userLogin)) {
       case Some(uc) =>
         failure(UserCredentialsAlreadyExistFailure(userLogin))
       case _ =>
@@ -13,7 +15,7 @@ trait AuthenticationDirectives extends ValidationDirectives with ServicePipeDire
     }
 
   def withRequiredCredentials[T](userLogin:UserLogin)(f: UserCredentials => Out[T]):Out[T] =
-    onSuccess(service.getUserCredentials(userLogin)) {
+    servicePipe(_.getUserCredentials(userLogin)) {
       case Some(uc) =>
         f(uc)
       case None =>
@@ -31,7 +33,7 @@ trait AuthenticationDirectives extends ValidationDirectives with ServicePipeDire
     }
 
   def withCredentialsByToken[T](token:ResetToken)(f:UserCredentials => Out[T]):Out[T] =
-    onSuccess(service.getUserCredentialsByToken(token)) {
+    servicePipe(_.getUserCredentialsByToken(token)) {
       case Some(uc) =>
         f(uc)
       case None =>

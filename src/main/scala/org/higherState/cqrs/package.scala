@@ -24,14 +24,10 @@ package object cqrs {
   type FutureValid[+T] = Future[ValidationNel[ValidationFailure, T]]
 
 
-  //Experimenting
-  //Shamelessly ripped from Shapeless
-  //https://github.com/milessabin/shapeless/blob/master/core/src/main/scala/shapeless/package.scala
-  def unexpected : Nothing = sys.error("Unexpected invocation")
-  trait =:!=[A, B]
+  implicit class TraverableValid[T](val self:TraversableOnce[Valid[T]]) extends AnyVal {
 
-  implicit def neq[A, B] : A =:!= B = new =:!=[A, B] {}
-  implicit def neqAmbig1[A] : A =:!= A = unexpected
-  implicit def neqAmbig2[A] : A =:!= A = unexpected
+    def sequence =
+      SequenceHelper(self)
+  }
 
 }

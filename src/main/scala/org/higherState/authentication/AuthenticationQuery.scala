@@ -12,10 +12,10 @@ trait AuthenticationQuery extends Query[AuthenticationQueryParameters] with Auth
         case UserCredentials(actualUserLogin, _, _, false, _) =>
           failure(PasswordChangeRequiredFailure(actualUserLogin))
         case UserCredentials(actualUserLogin, _, _, _, _) =>
-          result(actualUserLogin)
+          bind(actualUserLogin)
       }
 
     case GetLockedUserLogins =>
-      result(service.getLockedUserLogins)
+      servicePipe.transform(_.getLockedUserLogins)
   }
 }

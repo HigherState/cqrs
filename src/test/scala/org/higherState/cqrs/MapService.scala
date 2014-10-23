@@ -3,6 +3,7 @@ package org.higherState.cqrs
 import akka.actor.{ActorRef, ActorRefFactory}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
+import org.higherState.cqrs.akka.{AkkaCqrs, ActorAdapter}
 
 trait MapService extends CqrsService[MapCommand, MapQueryParameters] {
 

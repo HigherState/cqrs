@@ -1,8 +1,8 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.Query
+import org.higherState.cqrs.QueryExecutor
 
-trait AuthenticationQuery extends Query[AuthenticationQueryParameters] with AuthenticationDirectives {
+trait AuthenticationQueryExecutor extends QueryExecutor[AuthenticationQueryParameters] with AuthenticationDirectives {
 
   def execute: Function[AuthenticationQueryParameters, Out[Any]] = {
     case Authenticate(userLogin, password) =>
@@ -12,10 +12,10 @@ trait AuthenticationQuery extends Query[AuthenticationQueryParameters] with Auth
         case UserCredentials(actualUserLogin, _, _, false, _) =>
           failure(PasswordChangeRequiredFailure(actualUserLogin))
         case UserCredentials(actualUserLogin, _, _, _, _) =>
-          bind(actualUserLogin)
+          unit(actualUserLogin)
       }
 
     case GetLockedUserLogins =>
-      servicePipe.transform(_.getLockedUserLogins)
+      repository(_.getLockedUserLogins)
   }
 }

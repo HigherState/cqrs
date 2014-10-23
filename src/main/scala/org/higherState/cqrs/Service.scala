@@ -1,13 +1,10 @@
 package org.higherState.cqrs
 
 import scala.reflect.ClassTag
-import akka.actor._
-import scala.concurrent.{ExecutionContext, Future}
-import scalaz._
 
 trait Service extends Output
 
-sealed trait Cqrs extends Service {
+trait Cqrs extends Service {
 
   type C <: Command
   type QP <: QueryParameters
@@ -29,81 +26,46 @@ trait IdentityCqrs extends Cqrs with Output.Identity {
 
   def commandHandler:CommandHandler[C] with Output.Identity
 
-  def query:Query[QP] with Output.Identity
+  def queryExecutor:QueryExecutor[QP] with Output.Identity
 
-  protected def dispatchCommand(c: => C): Unit = {
+  protected def dispatchCommand(c: => C) {
     commandHandler.handle(c)
   }
 
   protected def executeQuery[T: ClassTag](qp: => QP): T = {
-    query.execute(qp).asInstanceOf[T]
+    queryExecutor.execute(qp).asInstanceOf[T]
   }
 }
 
-trait AkkaCqrs extends Cqrs with ActorRefBuilder with Output.Future {
+trait ValidationCqrs extends Cqrs with Output.Valid {
 
-  import akka.pattern.ask
-  implicit def timeout:akka.util.Timeout
+  def commandHandler:CommandHandler[C] with Output.Valid
 
-  protected def commandHandler:ActorRef
-  protected def query:ActorRef
+  def queryExecutor:QueryExecutor[QP] with Output.Valid
 
-  protected def dispatchCommand(c: => C): Future[Unit] =
-    commandHandler
-      .ask(c)
-      .mapTo[Unit]
+  protected def dispatchCommand(c: => C) =
+    commandHandler.handle(c)
 
-  protected def executeQuery[T: ClassTag](qp: => QP):Future[T] =
-    query
-      .ask(qp)
-      .mapTo[T]
+  protected def executeQuery[T: ClassTag](qp: => QP): Valid[T] = {
+    queryExecutor.execute(qp).asInstanceOf[Valid[T]]
+  }
 }
 
-trait AkkaValidationCqrs extends Cqrs with ActorRefBuilder with Output.FutureValid {
+trait FutureValidationCqrs extends Cqrs with Output.FutureValid {
 
-  import akka.pattern.ask
-  implicit def timeout:akka.util.Timeout
+  def commandHandler:CommandHandler[C] with Output.FutureValid
 
+  def queryExecutor:QueryExecutor[QP] with Output.FutureValid
 
-  protected def commandHandler:ActorRef
-  protected def query:ActorRef
+  protected def dispatchCommand(c: => C) =
+    commandHandler.handle(c)
 
-  protected def dispatchCommand(c: => C): FutureValid[Unit] =
-    commandHandler
-      .ask(c)
-      .mapTo[ValidationNel[ValidationFailure,Unit]]
-
-  protected def executeQuery[T: ClassTag](qp: => QP):FutureValid[T] =
-    query
-      .ask(qp)
-      .mapTo[Valid[T]]
+  protected def executeQuery[T: ClassTag](qp: => QP): FutureValid[T] = {
+    queryExecutor.execute(qp).asInstanceOf[FutureValid[T]]
+  }
 }
 
-trait ActorRefBuilder extends Cqrs {
-  arb =>
 
-  implicit def executionContext:ExecutionContext
-
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](serviceName:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
-    factory match {
-      case context:ActorContext =>
-        context
-          .child(s"CH-$serviceName")
-          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"CH-$serviceName"))
-      case system:ActorSystem =>
-        system.actorOf(Props.apply(a(executionContext)), s"CH-$serviceName")
-    }
-
-  protected def getQueryRef[T <: akka.actor.Actor with Query[QP]](serviceName:String)(a: ExecutionContext => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
-    factory match {
-      case context:ActorContext =>
-        context
-          .child(s"Q-$serviceName")
-          .getOrElse(context.actorOf(Props.apply(a(executionContext)), s"Q-$serviceName"))
-      case system:ActorSystem =>
-        system.actorOf(Props.apply(a(executionContext)), s"Q-$serviceName")
-    }
-}
 
 
 

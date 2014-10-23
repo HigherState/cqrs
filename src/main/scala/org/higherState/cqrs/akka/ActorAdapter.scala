@@ -1,14 +1,11 @@
-package org.higherState.cqrs
+package org.higherState.cqrs.akka
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.higherState.cqrs.{Output, CommandHandler, Message, Command, QueryParameters, QueryExecutor}
 
-//requires executionContext even if CQ does return futures
-//Unable to get =:!= to check on mixed in abstract types
-trait ActorAdapter extends akka.actor.Actor with Output {
+abstract class ActorAdapter(implicit val executionContext:ExecutionContext) extends akka.actor.Actor with Output {
 
   import akka.pattern.pipe
-
-  implicit def executionContext:ExecutionContext
 
   def receive = {
     case m:Message =>
@@ -22,7 +19,7 @@ trait ActorAdapter extends akka.actor.Actor with Output {
 
   val commandQuery:PartialFunction[Message, Any] =
     this match {
-      case cq:CommandHandler[Command] with Query[QueryParameters] =>
+      case cq:CommandHandler[Command@unchecked] with QueryExecutor[QueryParameters@unchecked] =>
       {
         case c:Command =>
           cq.handle(c)
@@ -34,7 +31,7 @@ trait ActorAdapter extends akka.actor.Actor with Output {
         case c:Command =>
           ch.handle(c)
       }
-      case q:Query[QueryParameters@unchecked] =>
+      case q:QueryExecutor[QueryParameters@unchecked] =>
       {
         case qp:QueryParameters =>
           q.execute(qp)

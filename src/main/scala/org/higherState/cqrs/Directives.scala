@@ -5,10 +5,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait Directives extends Output {
 
-  def complete:Out[Unit] =
-    bind[Unit](Unit)
+  type Pipe[+S <: Service] = org.higherState.cqrs.Pipe[Out, S]
 
-  def bind[T](value: => T):Out[T]
+  def complete:Out[Unit] =
+    unit[Unit](Unit)
+
+  def unit[T](value: => T):Out[T]
 
   def flatMap[T,U](output:Out[T])(f:T => Out[U]):Out[U]
 
@@ -50,7 +52,7 @@ trait FailureDirectives extends Directives {
 /*Output fixed*/
 trait IdentityDirectives extends Directives with Output.Identity {
 
-  def bind[T](value: => T):Out[T] =
+  def unit[T](value: => T):Out[T] =
     value
 
   def map[T,U](output:Out[T])(f:T => U):Out[U] =
@@ -64,8 +66,10 @@ trait IdentityDirectives extends Directives with Output.Identity {
 }
 
 trait ValidationDirectives extends FailureDirectives with Output.Valid {
+  import scalaz.syntax.traverse._
+  import scalaz.std.list._
 
-  def bind[T](value: => T): Out[T] =
+  def unit[T](value: => T): Out[T] =
     Success(value)
 
   def failure[T](failure: => ValidationFailure): Out[T] =
@@ -83,8 +87,9 @@ trait ValidationDirectives extends FailureDirectives with Output.Valid {
   def flatMap[T,U](r1:Out[T])(f:T => Out[U]):Out[U] =
     r1.flatMap(f)
 
-  def sequence[T,U](r: => TraversableOnce[Out[T]])(f:Seq[T] => Out[U]):Out[U] =
-    r.sequence.flatMap(f)
+  def sequence[T,U](r: => TraversableOnce[Out[T]])(f:Seq[T] => Out[U]):Out[U] = {
+    r.toList.sequence[Valid, T].flatMap(s => f(s))
+  }
 
   def onFailure[T](value:Out[T])(f:NonEmptyList[ValidationFailure] => Out[T]):Out[T] =
     value match {
@@ -100,7 +105,7 @@ trait FutureDirectives extends Directives with Output.Future {
 
   implicit def executionContext:ExecutionContext
 
-  def bind[T](value: => T):Out[T] =
+  def unit[T](value: => T):Out[T] =
     Future.successful(value)
 
   def map[T,U](output:Out[T])(f:T => U):Out[U] =
@@ -114,11 +119,13 @@ trait FutureDirectives extends Directives with Output.Future {
 }
 
 trait FutureValidationDirectives extends FailureDirectives with Output.FutureValid {
+  import scalaz.syntax.traverse._
+  import scalaz.std.list._
 
   implicit def executionContext:ExecutionContext
 
-  def bind[T](value: => T):Out[T] =
-    Future.successful(Success(value))
+  def unit[T](value: => T):Out[T] =
+    Future.successful(scalaz.Success(value))
 
   def map[T,U](output:Out[T])(f:T => U):Out[U] =
     output.map(_.map(f))
@@ -128,25 +135,25 @@ trait FutureValidationDirectives extends FailureDirectives with Output.FutureVal
       case Success(s) =>
         f(s)
       case Failure(vf) =>
-        Future.successful(Failure(vf))
+        Future.successful(scalaz.Failure(vf))
     }
 
   def failure[T](failure: => ValidationFailure) =
-    Future.successful(Failure(NonEmptyList(failure)))
+    Future.successful(scalaz.Failure(NonEmptyList(failure)))
 
   def failures[T](failures: => NonEmptyList[ValidationFailure]):Out[T] =
-    Future.successful(Failure(failures))
+    Future.successful(scalaz.Failure(failures))
 
   def failures[T](head: ValidationFailure, tail: Seq[ValidationFailure]): Out[T] =
-    Future.successful(Failure(NonEmptyList(head, tail:_*)))
+    Future.successful(scalaz.Failure(NonEmptyList(head, tail:_*)))
 
   def sequence[T,U](r: => TraversableOnce[Out[T]])(f:Seq[T] => Out[U]):Out[U] =
     Future.sequence(r).flatMap { v =>
-      v.sequence match {
-        case Success(s) =>
-          f(s)
-        case Failure(vf) =>
-          Future.successful(Failure(vf))
+      v.toList.sequence[Valid, T] match {
+        case scalaz.Success(s) =>
+          f(s.toSeq)
+        case scalaz.Failure(vf) =>
+          Future.successful(scalaz.Failure(vf))
       }
     }
 
@@ -158,54 +165,4 @@ trait FutureValidationDirectives extends FailureDirectives with Output.FutureVal
 
   def validationSequence[T,U](v:Iter[Out[T]])(f:Iter[Valid[T]] => Out[U]):Out[U] =
     Future.sequence(v).flatMap{f}
-}
-
-sealed trait Pipe extends Directives with Input {
-  protected def success[T](value: => In[T]):Out[T]
-}
-
-trait ServicePipesDirectives extends Directives {
-  container =>
-  import scala.language.higherKinds
-
-  trait ServicePipe[S <: Service] extends Pipe {
-    def service:S{type Out[+T] = In[T]}
-
-    type Out[+T] <: container.Out[T]
-
-    def apply[T, U](f: S{type Out[T] = In[T]} => In[T])(m:T => container.Out[U]):container.Out[U] =
-      container.flatMap {
-        success(f(service))
-      }(m)
-
-    def transform[T](f: S{type Out[T] = In[T]} => In[T]):container.Out[T] =
-      container.map {
-        success(f(service))
-      }{t => t}
-  }
-}
-
-trait IdentityPipe extends Pipe with Input.Identity {
-  def success[T](value: => In[T]):Out[T] =
-    bind(value)
-}
-
-trait ValidationPipe extends Pipe with FailureDirectives with Input.Valid {
-  def success[T](value: => In[T]):Out[T] =
-    value match {
-      case Failure(vf) =>
-        failures[T](vf)
-      case Success(s) =>
-        bind(s)
-    }
-}
-
-trait FuturePipe extends Pipe with FutureDirectives with Input.Future {
-  def success[T](value: => In[T]):Out[T] =
-    value
-}
-
-trait FutureValidationPipe extends Pipe with FutureValidationDirectives with Input.FutureValid {
-  def success[T](value: => In[T]):Out[T] =
-    value
 }

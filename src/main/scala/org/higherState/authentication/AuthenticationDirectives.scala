@@ -1,13 +1,14 @@
 package org.higherState.authentication
 
 import org.higherState.cqrs.ValidationDirectives
+import org.higherState.repository.KeyValueRepository
 
 trait AuthenticationDirectives extends ValidationDirectives {
 
-  def repository:Pipe[AuthenticationRepository]
+  def repository:Pipe[KeyValueRepository[UserLogin, UserCredentials]]
 
   def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
-    flatMap(repository(_.getUserCredentials(userLogin))) {
+    flatMap(repository(_.get(userLogin))) {
       case Some(uc) =>
         failure(UserCredentialsAlreadyExistFailure(userLogin))
       case _ =>
@@ -15,7 +16,7 @@ trait AuthenticationDirectives extends ValidationDirectives {
     }
 
   def withRequiredCredentials[T](userLogin:UserLogin)(f: UserCredentials => Out[T]):Out[T] =
-    flatMap(repository(_.getUserCredentials(userLogin))) {
+    flatMap(repository(_.get(userLogin))) {
       case Some(uc) =>
         f(uc)
       case None =>
@@ -30,13 +31,5 @@ trait AuthenticationDirectives extends ValidationDirectives {
         //Event publisher, publish failure of authentication
         failure(InvalidPasswordFailure(userLogin))
       }
-    }
-
-  def withCredentialsByToken[T](token:ResetToken)(f:UserCredentials => Out[T]):Out[T] =
-    flatMap(repository(_.getUserCredentialsByToken(token))) {
-      case Some(uc) =>
-        f(uc)
-      case None =>
-        failure(TokenExpiredFailure(token))
     }
 }

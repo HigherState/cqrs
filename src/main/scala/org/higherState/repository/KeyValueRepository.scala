@@ -20,7 +20,7 @@ trait KeyValueRepository[Key, Value] extends Service {
 }
 
 
-trait KeyValueCqrsRepository[Key, Value] extends CqrsService[KeyValueCommand[Key, Value], KeyValueQueryParameters[Key,Value]] with KeyValueRepository {
+trait KeyValueCqrsRepository[Key, Value] extends CqrsService[KeyValueCommand[Key, Value], KeyValueQueryParameters[Key,Value]] with KeyValueRepository[Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
     executeQuery[Boolean](Contains(key))

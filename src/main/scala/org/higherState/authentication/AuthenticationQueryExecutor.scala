@@ -7,15 +7,15 @@ trait AuthenticationQueryExecutor extends QueryExecutor[AuthenticationQueryParam
   def execute: Function[AuthenticationQueryParameters, Out[Any]] = {
     case Authenticate(userLogin, password) =>
       withRequiredAuthenticatedCredentials(userLogin, password) {
-        case UserCredentials(actualUserLogin, _, true, _, _) =>
+        case UserCredentials(actualUserLogin, _, true, _) =>
           failure(UserLockedFailure(actualUserLogin))
-        case UserCredentials(actualUserLogin, _, _, false, _) =>
-          failure(PasswordChangeRequiredFailure(actualUserLogin))
-        case UserCredentials(actualUserLogin, _, _, _, _) =>
+        case UserCredentials(actualUserLogin, _, _, _) =>
           unit(actualUserLogin)
       }
 
     case GetLockedUserLogins =>
-      repository(_.getLockedUserLogins)
+      map(repository(_.values)) { credentials =>
+        credentials.filter(_.isLocked)
+      }
   }
 }

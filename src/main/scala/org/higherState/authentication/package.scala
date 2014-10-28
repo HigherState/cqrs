@@ -23,6 +23,5 @@ package object authentication {
                               userLogin:UserLogin,
                               password:Password,
                               isLocked:Boolean,
-                              isResetRequired:Boolean,
-                              token:Option[ResetToken])
+                              failureCount:Int)
 }

@@ -101,9 +101,7 @@ trait ValidationDirectives extends FailureDirectives with Output.Valid {
     f(v)
 }
 
-trait FutureDirectives extends Directives with Output.Future {
-
-  implicit def executionContext:ExecutionContext
+abstract class FutureDirectives(implicit val executionContext:ExecutionContext) extends Directives with Output.Future {
 
   def unit[T](value: => T):Out[T] =
     Future.successful(value)
@@ -118,11 +116,9 @@ trait FutureDirectives extends Directives with Output.Future {
     Future.sequence(r.toSeq).flatMap(i => f(i))
 }
 
-trait FutureValidationDirectives extends FailureDirectives with Output.FutureValid {
+abstract class FutureValidationDirectives(implicit val executionContext:ExecutionContext) extends FailureDirectives with Output.FutureValid {
   import scalaz.syntax.traverse._
   import scalaz.std.list._
-
-  implicit def executionContext:ExecutionContext
 
   def unit[T](value: => T):Out[T] =
     Future.successful(scalaz.Success(value))

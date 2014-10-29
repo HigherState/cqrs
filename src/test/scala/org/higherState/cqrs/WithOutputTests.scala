@@ -3,8 +3,8 @@ package org.higherState.cqrs
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.{ExecutionContext, Future}
-import akka.actor.ActorSystem
-import akka.util.Timeout
+import actor.actor.ActorSystem
+import actor.util.Timeout
 
 
 class WithOutputTests extends FunSuite with Matchers with ScalaFutures {

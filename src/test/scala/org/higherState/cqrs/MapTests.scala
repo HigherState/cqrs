@@ -1,7 +1,7 @@
 package org.higherState.cqrs
 
-import akka.actor.ActorSystem
-import akka.util.Timeout
+import actor.actor.ActorSystem
+import actor.util.Timeout
 import scala.concurrent.ExecutionContext
 import org.scalatest.{Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures

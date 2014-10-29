@@ -1,30 +1,28 @@
-package org.higherState.cqrs.akka
+package org.higherState.cqrs.actor
 
+import org.higherState.cqrs.{QueryExecutor, CommandHandler, Output, Cqrs}
 import scala.reflect.ClassTag
 import akka.actor._
+import scala.concurrent.{ExecutionContext, Future}
 
-import org.higherState.cqrs.{QueryExecutor, CommandHandler, Output, Cqrs, FutureValid, Valid, FailureDirectives}
-
-
-abstract class AkkaValidationCqrs(implicit timeout:akka.util.Timeout) extends Cqrs with Output.FutureValid {
+abstract class ActorCqrs(serviceName:String)(implicit val executionContext:ExecutionContext, timeout:akka.util.Timeout) extends Cqrs with Output.Future {
 
   import akka.pattern.ask
 
   def commandHandler:ActorRef
   def queryExecutor:ActorRef
 
-  protected def dispatchCommand(c: => C): FutureValid[Unit] =
+  protected def dispatchCommand(c: => C): Future[Unit] =
     commandHandler
       .ask(c)
-      .mapTo[Valid[Unit]]
+      .mapTo[Unit]
 
-
-  protected def executeQuery[T: ClassTag](qp: => QP):FutureValid[T] =
+  protected def executeQuery[T: ClassTag](qp: => QP):Future[T] =
     queryExecutor
       .ask(qp)
-      .mapTo[Valid[T]]
+      .mapTo[T]
 
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -34,7 +32,7 @@ abstract class AkkaValidationCqrs(implicit timeout:akka.util.Timeout) extends Cq
         system.actorOf(Props.apply(a), s"CH-$serviceName")
     }
 
-  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -44,7 +42,7 @@ abstract class AkkaValidationCqrs(implicit timeout:akka.util.Timeout) extends Cq
         system.actorOf(Props.apply(a), s"Q-$serviceName")
     }
 
-  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context

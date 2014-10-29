@@ -1,6 +1,7 @@
 package org.higherState.cqrs
 
 import scala.reflect.ClassTag
+import scala.concurrent.ExecutionContext
 
 trait Service extends Output
 
@@ -51,7 +52,7 @@ trait ValidationCqrs extends Cqrs with Output.Valid {
   }
 }
 
-trait FutureValidationCqrs extends Cqrs with Output.FutureValid {
+abstract class FutureValidationCqrs(implicit val executionContext:ExecutionContext) extends Cqrs with Output.FutureValid {
 
   def commandHandler:CommandHandler[C] with Output.FutureValid
 

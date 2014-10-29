@@ -1,9 +1,9 @@
 package org.higherState.cqrs
 
-import akka.actor.{ActorRef, ActorRefFactory}
+import actor.actor.{ActorRef, ActorRefFactory}
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
-import org.higherState.cqrs.akka.{AkkaCqrs, ActorAdapter}
+import org.higherState.cqrs.actor.{AkkaCqrs, ActorAdapter}
 
 trait MapService extends CqrsService[MapCommand, MapQueryParameters] {
 
@@ -156,7 +156,7 @@ case object DoubleMapIdentityService extends MapService with IdentityCqrs {
 }
 
 
-case class MapAkkaService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
+case class MapAkkaService(implicit factory:ActorRefFactory, timeout:actor.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
 
   val state = new mutable.HashMap[Int,String] with MapDataService with Output.Identity
 
@@ -198,7 +198,7 @@ class FutureMapDataService(implicit executionContext:ExecutionContext) extends M
     Future(state -= key).map(_ => this)
 }
 
-case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
+case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:actor.util.Timeout, executionContext:ExecutionContext) extends MapService with Output.Future with AkkaCqrs {
 
   val futureService = new FutureMapDataService
 
@@ -221,7 +221,7 @@ case class MapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.u
     }
 }
 
-case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:akka.util.Timeout, executionContext:ExecutionContext) extends  MapService with AkkaCqrs {
+case class DoubleMapAkkaFutureService(implicit factory:ActorRefFactory, timeout:actor.util.Timeout, executionContext:ExecutionContext) extends  MapService with AkkaCqrs {
 
   val left = new FutureMapDataService
   val right = new FutureMapDataService

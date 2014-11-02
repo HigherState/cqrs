@@ -12,7 +12,9 @@ trait ActorValidationCqrs extends Cqrs with Output.FutureValid {
 
   implicit def executionContext:ExecutionContext
   implicit def timeout:akka.util.Timeout
+  implicit def factory:ActorRefFactory
 
+  def serviceName:String
   def commandHandler:ActorRef
   def queryExecutor:ActorRef
 
@@ -21,13 +23,12 @@ trait ActorValidationCqrs extends Cqrs with Output.FutureValid {
       .ask(c)
       .mapTo[Valid[Unit]]
 
-
   protected def executeQuery[T: ClassTag](qp: => QP):FutureValid[T] =
     queryExecutor
       .ask(qp)
       .mapTo[Valid[T]]
 
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C] with FailureDirectives](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -37,7 +38,7 @@ trait ActorValidationCqrs extends Cqrs with Output.FutureValid {
         system.actorOf(Props.apply(a), s"CH-$serviceName")
     }
 
-  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with FailureDirectives](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -47,7 +48,7 @@ trait ActorValidationCqrs extends Cqrs with Output.FutureValid {
         system.actorOf(Props.apply(a), s"Q-$serviceName")
     }
 
-  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C] with FailureDirectives](serviceName:String)(a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C] with FailureDirectives](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context

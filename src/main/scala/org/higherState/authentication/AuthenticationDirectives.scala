@@ -1,9 +1,9 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.ValidationDirectives
+import org.higherState.cqrs.FailureDirectives
 import org.higherState.repository.KeyValueRepository
 
-trait AuthenticationDirectives extends ValidationDirectives {
+trait AuthenticationDirectives extends FailureDirectives {
 
   def repository:Pipe[KeyValueRepository[UserLogin, UserCredentials]]
 

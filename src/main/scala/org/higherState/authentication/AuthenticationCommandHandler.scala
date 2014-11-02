@@ -40,7 +40,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
       map(repository(_.get(userLogin))) {
         case Some(uc) =>
           val newCount = uc.failureCount + 1
-          map(repository(_ += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries)))
+          repository(_ += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries))
         case None =>
           complete
       }
@@ -48,7 +48,7 @@ trait AuthenticationCommandHandler extends CommandHandler[AuthenticationCommand]
     case ResetFailureCount(userLogin) =>
       map(repository(_.get(userLogin))) {
         case Some(uc) =>
-          map(repository(_ += uc.userLogin -> uc.copy(failureCount = 0)))
+          repository(_ += uc.userLogin -> uc.copy(failureCount = 0))
         case None =>
           complete
       }

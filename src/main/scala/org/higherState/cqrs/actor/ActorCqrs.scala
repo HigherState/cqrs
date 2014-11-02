@@ -9,6 +9,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
 
   import akka.pattern.ask
 
+  implicit def factory:ActorRefFactory
   implicit def executionContext:ExecutionContext
   implicit def timeout:akka.util.Timeout
 
@@ -27,7 +28,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
       .ask(qp)
       .mapTo[T]
 
-  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandHandlerRef[T <: akka.actor.Actor with CommandHandler[C]](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -37,7 +38,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
         system.actorOf(Props.apply(a), s"CH-$serviceName")
     }
 
-  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getQueryRef[T <: akka.actor.Actor with QueryExecutor[QP]](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context
@@ -47,7 +48,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
         system.actorOf(Props.apply(a), s"Q-$serviceName")
     }
 
-  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C]](a: => T)(implicit factory:ActorRefFactory, t:ClassTag[T]) =
+  protected def getCommandQueryRef[T <: akka.actor.Actor with QueryExecutor[QP] with CommandHandler[C]](a: => T)(implicit t:ClassTag[T]) =
     factory match {
       case context:ActorContext =>
         context

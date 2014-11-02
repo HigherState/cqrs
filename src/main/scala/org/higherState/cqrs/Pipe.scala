@@ -1,6 +1,9 @@
 package org.higherState.cqrs
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{TimeoutException, CanAwait, ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.util.Try
+import scala.reflect.ClassTag
 
 case class Pipe[Out[_], +S <: Service](from:S)(implicit ev:SuccessPipe[S#Out, Out]) {
 
@@ -56,9 +59,16 @@ trait FuturePipes {
       value
   }
 
-  implicit def FutureFutureValidationPipe(implicit exectionContext:ExecutionContext) = new SuccessPipe[Output.Future#Out, Output.FutureValid#Out] {
+//    implicit def FutureFutureValidationPipe(implicit executionContext:ExecutionContext) = new SuccessPipe[Output.Future#Out, Output.FutureValid#Out] {
+//      def success[T](value: => Output.Future#Out[T]): Output.FutureValid#Out[T] =
+//        value.map(scalaz.Success(_))
+//    }
+
+  //implicit def with execution was not resolving so created future wrapper
+  implicit val FutureFutureValidationPipe = new SuccessPipe[Output.Future#Out, Output.FutureValid#Out] {
     def success[T](value: => Output.Future#Out[T]): Output.FutureValid#Out[T] =
-      value.map(scalaz.Success(_))
+      value.map(scalaz.Success(_))(scala.concurrent.ExecutionContext.Implicits.global)
+      //DelayedFuture(value)(scalaz.Success(_))
   }
 }
 
@@ -71,3 +81,36 @@ trait FutureValidationPipes {
 }
 
 object Pipes extends IdentityPipes with ValidationPipes with FuturePipes with FutureValidationPipes
+
+
+//Experimental wrapper as we don't have an execution context in implicit pipe
+case class DelayedFuture[+T,T2](future:Future[T])(m:(T) => T2) extends Future[T2] {
+  def value: Option[Try[T2]] = future.value.map(_.map(m))
+
+  @throws(classOf[TimeoutException])
+  @throws(classOf[InterruptedException])
+  def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
+    future.ready(atMost)
+    this
+  }
+
+  @scala.throws[Exception](classOf[Exception])
+  def result(atMost: Duration)(implicit permit: CanAwait): T2 =
+    m(future.result(atMost))
+
+  def onComplete[U](f: (Try[T2]) => U)(implicit executor: ExecutionContext) {
+    future.onComplete(t => f(t.map(m)))
+  }
+
+  def isCompleted: Boolean =
+    future.isCompleted
+//
+//  override def collect[S](pf: PartialFunction[T2, S])(implicit executor: ExecutionContext): Future[S] =
+//    future.map(m).collect(pf)
+//
+//  override def flatMap[S](f: (T2) => Future[S])(implicit executor: ExecutionContext): Future[S] =
+//    future.map(m).flatMap(f)
+//
+//  override def map[S](f: (T2) => S)(implicit executor: ExecutionContext): Future[S] =
+//    future.map(m andThen f)
+}

@@ -2,22 +2,27 @@ package org.higherState.cqrs.actor
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.higherState.cqrs._
+import akka.pattern.pipe
 
 trait ActorAdapter extends akka.actor.Actor {
-
-  import akka.pattern.pipe
 
   implicit def executionContext:ExecutionContext
 
   def receive = dispatcher
 
   val dispatcher = this match {
+    case cq: CommandHandler[Command@unchecked] with QueryExecutor[QueryParameters@unchecked] with Output.FutureValid =>
+      commandDispatcher(cq).orElse(queryDispatcher(cq)).andThen(pipeSender)
     case cq: CommandHandler[Command@unchecked] with QueryExecutor[QueryParameters@unchecked] with Output.Future =>
-      commandDispatcher(cq).orElse(queryDispatcher(cq)).andThen(pipe)
+      commandDispatcher(cq).orElse(queryDispatcher(cq)).andThen(pipeSender)
+    case ch: CommandHandler[Command@unchecked] with Output.FutureValid =>
+      commandDispatcher(ch).andThen(pipeSender)
     case ch: CommandHandler[Command@unchecked] with Output.Future =>
-      commandDispatcher(ch).andThen(pipe)
+      commandDispatcher(ch).andThen(pipeSender)
+    case qe: QueryExecutor[QueryParameters@unchecked] with Output.FutureValid =>
+      queryDispatcher(qe).andThen(pipeSender)
     case qe: QueryExecutor[QueryParameters@unchecked] with Output.Future =>
-      queryDispatcher(qe).andThen(a => sender ! a)
+      queryDispatcher(qe).andThen(pipeSender)
     case ch: CommandHandler[Command@unchecked] =>
       commandDispatcher(ch).andThen(a => sender ! a)
     case qe: QueryExecutor[QueryParameters@unchecked] =>
@@ -32,7 +37,9 @@ trait ActorAdapter extends akka.actor.Actor {
     case qp: QueryParameters =>
       qe.execute(qp)
   }
-  def pipe: PartialFunction[Any, Unit] = {
-    case f:Future[_] => f.pipeTo(sender)
+
+  def pipeSender: PartialFunction[Any, Unit] = {
+    case f:Future[_] =>
+      f.pipeTo(sender)
   }
 }

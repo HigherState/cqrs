@@ -4,13 +4,13 @@ organization := "org.higherState"
 
 version := "0.1"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.4"
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-compiler" % "2.10.3",
-  "org.scalaz" %% "scalaz-core" % "7.0.4",
-  "com.typesafe.akka" %% "akka-actor" % "2.2.3",
-  "org.scalatest" % "scalatest_2.10" % "2.1.0" % "test"
+  "org.scala-lang" % "scala-compiler" % "2.11.4",
+  "org.scalaz" %% "scalaz-core" % "7.1.0",
+  "com.typesafe.akka" %% "akka-actor" % "2.3.6",
+  "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
 )
 
 resolvers ++= Seq (

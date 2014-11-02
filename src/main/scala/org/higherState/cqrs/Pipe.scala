@@ -5,6 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class Pipe[Out[_], +S <: Service](from:S)(implicit ev:SuccessPipe[S#Out, Out]) {
 
   def apply[In[_], T](f: S => In[T]):Out[T] =
+    //forced casting, havent found a better way to do this without causing variance issues
     ev.success(f(from).asInstanceOf[S#Out[T]])
 }
 

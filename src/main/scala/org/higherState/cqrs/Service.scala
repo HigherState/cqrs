@@ -1,7 +1,7 @@
 package org.higherState.cqrs
 
 import scala.reflect.ClassTag
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 
 trait Service extends Output
 
@@ -52,7 +52,24 @@ trait ValidationCqrs extends Cqrs with Output.Valid {
   }
 }
 
-abstract class FutureValidationCqrs(implicit val executionContext:ExecutionContext) extends Cqrs with Output.FutureValid {
+trait FutureCqrs extends Cqrs with Output.Future {
+
+  def executionContext:ExecutionContext
+
+  def commandHandler:CommandHandler[C] with Output.Future
+
+  def queryExecutor:QueryExecutor[QP] with Output.Future
+
+  protected def dispatchCommand(c: => C) =
+    commandHandler.handle(c)
+
+  protected def executeQuery[T: ClassTag](qp: => QP): Future[T] =
+    queryExecutor.execute(qp).asInstanceOf[Future[T]]
+}
+
+trait FutureValidationCqrs extends Cqrs with Output.FutureValid {
+
+  def executionContext:ExecutionContext
 
   def commandHandler:CommandHandler[C] with Output.FutureValid
 
@@ -61,9 +78,8 @@ abstract class FutureValidationCqrs(implicit val executionContext:ExecutionConte
   protected def dispatchCommand(c: => C) =
     commandHandler.handle(c)
 
-  protected def executeQuery[T: ClassTag](qp: => QP): FutureValid[T] = {
+  protected def executeQuery[T: ClassTag](qp: => QP): FutureValid[T] =
     queryExecutor.execute(qp).asInstanceOf[FutureValid[T]]
-  }
 }
 
 

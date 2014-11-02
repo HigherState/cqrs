@@ -5,9 +5,14 @@ import scala.reflect.ClassTag
 import akka.actor._
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class ActorCqrs(serviceName:String)(implicit val executionContext:ExecutionContext, timeout:akka.util.Timeout) extends Cqrs with Output.Future {
+trait ActorCqrs extends Cqrs with Output.Future {
 
   import akka.pattern.ask
+
+  implicit def executionContext:ExecutionContext
+  implicit def timeout:akka.util.Timeout
+
+  def serviceName:String
 
   def commandHandler:ActorRef
   def queryExecutor:ActorRef

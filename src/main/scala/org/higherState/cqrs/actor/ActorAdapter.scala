@@ -3,9 +3,11 @@ package org.higherState.cqrs.actor
 import scala.concurrent.{ExecutionContext, Future}
 import org.higherState.cqrs._
 
-abstract class ActorAdapter(implicit val executionContext:ExecutionContext) extends akka.actor.Actor {
+trait ActorAdapter extends akka.actor.Actor {
 
   import akka.pattern.pipe
+
+  implicit def executionContext:ExecutionContext
 
   def receive = dispatcher
 
@@ -31,6 +33,6 @@ abstract class ActorAdapter(implicit val executionContext:ExecutionContext) exte
       qe.execute(qp)
   }
   def pipe: PartialFunction[Any, Unit] = {
-    case f:Future[_] => f pipeTo sender
+    case f:Future[_] => f.pipeTo(sender)
   }
 }

@@ -4,10 +4,14 @@ import scala.reflect.ClassTag
 import akka.actor._
 
 import org.higherState.cqrs.{QueryExecutor, CommandHandler, Output, Cqrs, FutureValid, Valid, FailureDirectives}
+import scala.concurrent.ExecutionContext
 
-abstract class ActorValidationCqrs(implicit timeout:akka.util.Timeout) extends Cqrs with Output.FutureValid {
+trait ActorValidationCqrs extends Cqrs with Output.FutureValid {
 
   import akka.pattern.ask
+
+  implicit def executionContext:ExecutionContext
+  implicit def timeout:akka.util.Timeout
 
   def commandHandler:ActorRef
   def queryExecutor:ActorRef

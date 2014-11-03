@@ -1,6 +1,5 @@
 package org.higherState.authentication
 
-
 import org.scalatest.{BeforeAndAfter, Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.{ActorRef, ActorSystem}
@@ -144,7 +143,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
   test("CQRS actor authentication piping from actor repository service") {
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
     val akkaCqrsRepository =
-      new impl.ActorCqrs("AkkaCqrsRepository") with KeyValueCqrsRepository[UserLogin, UserCredentials] {
+      new impl.ActorCqrs("AkkaCqrsRepository2") with KeyValueCqrsRepository[UserLogin, UserCredentials] {
         val queryExecutor: ActorRef =
         //here actor can be enriched with supervisor/routing etc
           getQueryRef {
@@ -190,9 +189,5 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
         result3 should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
       }
     }
-  }
-
-  after { //need to change
-    system.shutdown()
   }
 }

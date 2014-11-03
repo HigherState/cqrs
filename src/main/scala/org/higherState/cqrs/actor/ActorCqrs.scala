@@ -35,6 +35,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
           .child(s"CH-$serviceName")
           .getOrElse(context.actorOf(Props.apply(a), s"CH-$serviceName"))
       case system:ActorSystem =>
+        //to check existance, returns a future
         system.actorOf(Props.apply(a), s"CH-$serviceName")
     }
 
@@ -45,6 +46,7 @@ trait ActorCqrs extends Cqrs with Output.Future {
           .child(s"Q-$serviceName")
           .getOrElse(context.actorOf(Props.apply(a), s"Q-$serviceName"))
       case system:ActorSystem =>
+        //to check existance, returns a future
         system.actorOf(Props.apply(a), s"Q-$serviceName")
     }
 

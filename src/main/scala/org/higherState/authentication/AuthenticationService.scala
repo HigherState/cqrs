@@ -1,31 +1,32 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Iter, CqrsService}
+import org.higherState.cqrs.Iter
+import org.higherState.cqrs2
 
-trait AuthenticationService extends CqrsService[AuthenticationCommand, AuthenticationQueryParameters] {
+abstract class AuthenticationService[Out[+_]] extends cqrs2.CqrsService[Out, AuthenticationCommand, AuthenticationQueryParameters] {
 
   def createNewUser(userLogin:UserLogin, password:Password) =
-    dispatchCommand(CreateNewUser(userLogin, password))
+    dispatcher.sendCommand(CreateNewUser(userLogin, password))
 
   def deleteUser(userLogin:UserLogin) =
-    dispatchCommand(DeleteUser(userLogin))
+    dispatcher.sendCommand(DeleteUser(userLogin))
 
   def incrementFailureCount(userLogin:UserLogin) =
-    dispatchCommand(IncrementFailureCount(userLogin))
+    dispatcher.sendCommand(IncrementFailureCount(userLogin))
 
   def resetFailureCount(userLogin:UserLogin) =
-    dispatchCommand(ResetFailureCount(userLogin))
+    dispatcher.sendCommand(ResetFailureCount(userLogin))
 
   def setLock(userLogin:UserLogin, lock:Boolean) =
-    dispatchCommand(SetLock(userLogin, lock))
+    dispatcher.sendCommand(SetLock(userLogin, lock))
 
   def updatePasswordWithCurrentPassword(userLogin:UserLogin, currentPassword:Password, newPassword:Password) =
-    dispatchCommand(UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword))
+    dispatcher.sendCommand(UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword))
 
   def authenticate(userLogin:UserLogin, password:Password):Out[UserLogin] =
-     executeQuery[UserLogin](Authenticate(userLogin, password))
+    dispatcher.executeQuery[UserLogin](Authenticate(userLogin, password))
 
   def getLockedUserLogins =
-    executeQuery[Iter[(UserLogin, Int)]](GetLockedUserLogins)
+    dispatcher.executeQuery[Iter[(UserLogin, Int)]](GetLockedUserLogins)
 
 }

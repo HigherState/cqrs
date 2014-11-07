@@ -2,13 +2,15 @@ package org.higherState.authentication
 
 import org.higherState.cqrs.FailureDirectives
 import org.higherState.repository.KeyValueRepository
+import org.higherState.cqrs2
 
-trait AuthenticationDirectives extends FailureDirectives {
+trait AuthenticationDirectives[In[+_], Out[+_]] extends cqrs2.Directives[Out] {
 
-  def repository:Pipe[KeyValueRepository[UserLogin, UserCredentials]]
+  def pipe:cqrs2.Pipe[In, Out]
+  def repository:KeyValueRepository[In, UserLogin, UserCredentials]
 
   def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
-    flatMap(repository(_.get(userLogin))) {
+    flatMap(pipe(repository.get(userLogin))) {
       case Some(uc) =>
         failure(UserCredentialsAlreadyExistFailure(userLogin))
       case _ =>
@@ -16,7 +18,7 @@ trait AuthenticationDirectives extends FailureDirectives {
     }
 
   def withRequiredCredentials[T](userLogin:UserLogin)(f: UserCredentials => Out[T]):Out[T] =
-    flatMap(repository(_.get(userLogin))) {
+    flatMap(pipe(repository.get(userLogin))) {
       case Some(uc) =>
         f(uc)
       case None =>

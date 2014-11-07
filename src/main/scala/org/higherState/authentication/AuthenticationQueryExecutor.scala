@@ -1,8 +1,8 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.QueryExecutor
+import org.higherState.cqrs2
 
-trait AuthenticationQueryExecutor extends QueryExecutor[AuthenticationQueryParameters] with AuthenticationDirectives {
+trait AuthenticationQueryExecutor[In[+_], Out[+_]] extends cqrs2.QueryExecutor[Out, AuthenticationQueryParameters] with AuthenticationDirectives[In, Out] {
 
   def execute: Function[AuthenticationQueryParameters, Out[Any]] = {
     case Authenticate(userLogin, password) =>
@@ -14,7 +14,7 @@ trait AuthenticationQueryExecutor extends QueryExecutor[AuthenticationQueryParam
       }
 
     case GetLockedUserLogins =>
-      map(repository(_.values)) { credentials =>
+      map(pipe(repository.values)) { credentials =>
         credentials.filter(_.isLocked)
       }
   }

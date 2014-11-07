@@ -1,9 +1,10 @@
 package org.higherState.repository
 
-import org.higherState.cqrs.{Output, Service, CqrsService, Iter}
+import org.higherState.cqrs.{Output, CqrsService, Iter}
 import scala.collection.mutable
+import org.higherState.cqrs2
 
-trait KeyValueRepository[Key, Value] extends Service {
+trait KeyValueRepository[Out[+_], Key, Value] extends cqrs2.Service[Out] {
 
   def contains(key:Key):Out[Boolean]
 
@@ -19,29 +20,29 @@ trait KeyValueRepository[Key, Value] extends Service {
 
 }
 
-trait KeyValueCqrsRepository[Key, Value] extends CqrsService[KeyValueCommand[Key, Value], KeyValueQueryParameters[Key,Value]] with KeyValueRepository[Key, Value] {
+trait KeyValueCqrsRepository[Out[+_], Key, Value] extends cqrs2.CqrsService[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key,Value]] with KeyValueRepository[Out, Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
-    executeQuery[Boolean](Contains(key))
+    dispatcher.executeQuery[Boolean](Contains(key))
 
   def get(key:Key):Out[Option[Value]] =
-    executeQuery[Option[Value]](Get(key))
+    dispatcher.executeQuery[Option[Value]](Get(key))
 
   def iterator:Out[Iter[(Key, Value)]] =
-    executeQuery[Iter[(Key, Value)]](Iterator())
+    dispatcher.executeQuery[Iter[(Key, Value)]](Iterator())
 
   def values:Out[Iter[Value]] =
-    executeQuery[Iter[Value]](Values())
+    dispatcher.executeQuery[Iter[Value]](Values())
 
   def += (kv:(Key, Value)):Out[Unit] =
-    dispatchCommand(Add(kv))
+    dispatcher.sendCommand(Add(kv))
 
   def -= (key:Key):Out[Unit] =
-    dispatchCommand(Remove(key))
+    dispatcher.sendCommand(Remove(key))
 }
 
 // simple repository for testing
-case class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Key, Value] with Output.Identity {
+case class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[cqrs2.Id, Key, Value] {
   def -=(key: Key) {
     state -= key
   }

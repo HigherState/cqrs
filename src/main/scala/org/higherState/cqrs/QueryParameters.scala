@@ -2,7 +2,6 @@ package org.higherState.cqrs
 
 trait QueryParameters extends Message
 
-trait QueryExecutor[QP <: QueryParameters] extends Output {
-
+trait QueryExecutor[Out[+_], QP <: QueryParameters] {
   def execute:Function[QP, Out[Any]]
 }

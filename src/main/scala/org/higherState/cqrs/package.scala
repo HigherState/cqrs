@@ -11,8 +11,16 @@ package object cqrs {
 
   type Valid[+T] = ValidationNel[ValidationFailure, T]
 
+  type EitherValid[+T] = scalaz.\/[ValidationFailures, T]
+
   type ValidationFailures = NonEmptyList[ValidationFailure]
 
   type FutureValid[+T] = Future[ValidationNel[ValidationFailure, T]]
+
+  type FutureEitherValid[+T] = Future[EitherValid[T]]
+
+  type FutureValidz[+T] = scalaz.concurrent.Future[ValidationNel[ValidationFailure, T]]
+
+  type FutureEitherValidz[+T] = scalaz.concurrent.Future[EitherValid[T]]
 
 }

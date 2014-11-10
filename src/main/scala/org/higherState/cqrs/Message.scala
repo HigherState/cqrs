@@ -2,7 +2,7 @@ package org.higherState.cqrs
 
 trait Message
 
-trait MessageReceiver[M <: Message] extends Output {
+trait MessageReceiver[Out[+_], M <: Message] {
 
   def handle:Function[M, Out[Any]]
 

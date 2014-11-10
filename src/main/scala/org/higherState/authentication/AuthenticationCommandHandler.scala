@@ -1,55 +1,58 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.CommandHandler
-import org.higherState.cqrs2
+import org.higherState.cqrs.{Pipe, ServicePipe, CommandHandler}
+import org.higherState.repository.KeyValueRepository
+import scalaz.Monad
 
-trait AuthenticationCommandHandler[In[+_], Out[+_]] extends cqrs2.CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
+abstract class AuthenticationCommandHandler[In[+_], Out[+_]]
+  (maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
+  (implicit val pipe:Pipe[In, Out], val fm:Monad[Out])
+  extends CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
 
-  def maxNumberOfTries:Int
+  import ServicePipe._
 
   def handle = {
     case CreateNewUser(userLogin, password) =>
       withValidUniqueLogin(userLogin) {
-          pipe(repository += (userLogin -> (
-            UserCredentials(
-              userLogin,
-              password,
-              false,
-              0
-            ))
-          )
+        repository += (userLogin -> (
+          UserCredentials(
+            userLogin,
+            password,
+            false,
+            0
+          ))
         )
       }
 
     case UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword) =>
       withRequiredAuthenticatedCredentials(userLogin, currentPassword) { uc =>
-        pipe(repository += uc.userLogin -> uc.copy(password = newPassword, isLocked = false))
+        repository += uc.userLogin -> uc.copy(password = newPassword, isLocked = false)
       }
 
     case DeleteUser(userLogin) =>
       withRequiredCredentials(userLogin) { uc =>
-        pipe(repository -= uc.userLogin)
+        repository -= uc.userLogin
       }
 
 
     case SetLock(userLogin, isLocked) =>
       withRequiredCredentials(userLogin) { uc =>
-        pipe(repository += uc.userLogin -> uc.copy(isLocked = isLocked))
+        repository += uc.userLogin -> uc.copy(isLocked = isLocked)
       }
 
     case IncrementFailureCount(userLogin) =>
-      map(pipe(repository.get(userLogin))) {
+      map(repository.get(userLogin)) {
         case Some(uc) =>
           val newCount = uc.failureCount + 1
-          pipe(repository += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries))
+          repository += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries)
         case None =>
           complete
       }
 
     case ResetFailureCount(userLogin) =>
-      map(pipe(repository.get(userLogin))) {
+      map(repository.get(userLogin)) {
         case Some(uc) =>
-          pipe(repository += uc.userLogin -> uc.copy(failureCount = 0))
+          repository += uc.userLogin -> uc.copy(failureCount = 0)
         case None =>
           complete
       }

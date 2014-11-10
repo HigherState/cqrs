@@ -1,10 +1,9 @@
 package org.higherState.repository
 
-import org.higherState.cqrs.{Output, CqrsService, Iter}
+import org.higherState.cqrs._
 import scala.collection.mutable
-import org.higherState.cqrs2
 
-trait KeyValueRepository[Out[+_], Key, Value] extends cqrs2.Service[Out] {
+trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
 
   def contains(key:Key):Out[Boolean]
 
@@ -17,10 +16,9 @@ trait KeyValueRepository[Out[+_], Key, Value] extends cqrs2.Service[Out] {
   def += (kv:(Key, Value)):Out[Unit]
 
   def -= (key:Key):Out[Unit]
-
 }
 
-trait KeyValueCqrsRepository[Out[+_], Key, Value] extends cqrs2.CqrsService[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key,Value]] with KeyValueRepository[Out, Key, Value] {
+trait KeyValueCqrsRepository[Out[+_], Key, Value] extends CqrsService[Out] with KeyValueRepository[Out, Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
     dispatcher.executeQuery[Boolean](Contains(key))
@@ -42,7 +40,7 @@ trait KeyValueCqrsRepository[Out[+_], Key, Value] extends cqrs2.CqrsService[Out,
 }
 
 // simple repository for testing
-case class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[cqrs2.Id, Key, Value] {
+case class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Identity, Key, Value] {
   def -=(key: Key) {
     state -= key
   }

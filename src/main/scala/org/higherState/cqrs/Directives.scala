@@ -5,6 +5,26 @@ import scalaz.Success
 
 trait Directives[Out[+_]] {
 
+  def complete:Out[Unit]
+
+  def unit[T](value: => T):Out[T]
+
+  def flatMap[T,U](output:Out[T])(f:T => Out[U]):Out[U]
+
+  def map[T,U](output:Out[T])(f:T => U):Out[U]
+
+  def sequence[T,U](r1:Out[T], r2:Out[T], r:Out[T]*)(f:Seq[T] => Out[U]):Out[U]
+
+  def sequence[T,U, G[_]](r: => G[Out[T]])(f:G[T] => Out[U])(implicit ev:Traverse[G]):Out[U]
+
+  def foreach(r1:Out[Unit], r2:Out[Unit], r:Out[Unit]*):Out[Unit]
+
+  def foreach[G[_]](f: => G[Out[Unit]])(implicit ev:Traverse[G]):Out[Unit]
+
+}
+
+trait MonadicDirectives[Out[+_]] extends Directives[Out]{
+
   import scalaz.std.list._
 
   implicit protected def fm:Monad[Out]

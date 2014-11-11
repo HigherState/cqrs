@@ -1,11 +1,11 @@
 package org.higherState.repository
 
 import java.util.concurrent.atomic.AtomicReference
-import scalaz.Monad
 import org.higherState.cqrs._
 
-abstract class InMemoryKeyValueCommandHandler[Out[+_], Key, Value](implicit val fm:Monad[Out]) extends CommandHandler[Out, KeyValueCommand[Key,Value]] with Directives[Out] {
-  def state:AtomicReference[Map[Key, Value]]
+trait InMemoryKeyValueCommandHandler[Out[+_], Key, Value] extends CommandHandler[Out, KeyValueCommand[Key,Value]] with Directives[Out] {
+
+  protected def state:AtomicReference[Map[Key, Value]]
 
   def handle = {
     case Add(kv) =>

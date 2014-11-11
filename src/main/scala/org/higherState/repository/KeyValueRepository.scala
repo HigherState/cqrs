@@ -18,7 +18,7 @@ trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
   def -= (key:Key):Out[Unit]
 }
 
-trait KeyValueCqrsRepository[Out[+_], Key, Value] extends CqrsService[Out] with KeyValueRepository[Out, Key, Value] {
+class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:Dispatcher[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
     dispatcher.executeQuery[Boolean](Contains(key))
@@ -40,7 +40,7 @@ trait KeyValueCqrsRepository[Out[+_], Key, Value] extends CqrsService[Out] with 
 }
 
 // simple repository for testing
-case class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Identity, Key, Value] {
+class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Identity, Key, Value] {
   def -=(key: Key) {
     state -= key
   }

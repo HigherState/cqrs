@@ -4,12 +4,11 @@ import org.higherState.cqrs.{Pipe, ServicePipe, CommandHandler}
 import org.higherState.repository.KeyValueRepository
 import scalaz.Monad
 
-abstract class AuthenticationCommandHandler[In[+_], Out[+_]]
-  (maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe:Pipe[In, Out], val fm:Monad[Out])
-  extends CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
+trait AuthenticationCommandHandler[In[+_], Out[+_]] extends CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
 
   import ServicePipe._
+
+  protected def maxNumberOfTries:Int
 
   def handle = {
     case CreateNewUser(userLogin, password) =>

@@ -8,9 +8,9 @@ trait AuthenticationDirectives[In[+_], Out[+_]] extends FailureDirectives[Out] {
   import ServicePipe._
 
   implicit protected def pipe:Pipe[In, Out]
-  def repository:KeyValueRepository[In, UserLogin, UserCredentials]
+  protected def repository:KeyValueRepository[In, UserLogin, UserCredentials]
 
-  def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
+  protected def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
     flatMap(repository.get(userLogin)) {
       case Some(uc) =>
         failure(UserCredentialsAlreadyExistFailure(userLogin))
@@ -18,7 +18,7 @@ trait AuthenticationDirectives[In[+_], Out[+_]] extends FailureDirectives[Out] {
         f
     }
 
-  def withRequiredCredentials[T](userLogin:UserLogin)(f: UserCredentials => Out[T]):Out[T] =
+  protected def withRequiredCredentials[T](userLogin:UserLogin)(f: UserCredentials => Out[T]):Out[T] =
     flatMap(repository.get(userLogin)) {
       case Some(uc) =>
         f(uc)
@@ -26,7 +26,7 @@ trait AuthenticationDirectives[In[+_], Out[+_]] extends FailureDirectives[Out] {
         failure(UserCredentialsNotFoundFailure(userLogin))
     }
 
-  def withRequiredAuthenticatedCredentials[T](userLogin:UserLogin, password:Password)(f:UserCredentials => Out[T]):Out[T] =
+  protected def withRequiredAuthenticatedCredentials[T](userLogin:UserLogin, password:Password)(f:UserCredentials => Out[T]):Out[T] =
     withRequiredCredentials(userLogin) { uc =>
       if (uc.password.isMatch(password))
         f(uc)

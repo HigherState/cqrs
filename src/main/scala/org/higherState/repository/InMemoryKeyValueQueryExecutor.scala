@@ -4,9 +4,9 @@ import org.higherState.cqrs.{Directives, QueryExecutor}
 import java.util.concurrent.atomic.AtomicReference
 import scalaz.Monad
 
-abstract class InMemoryKeyValueQueryExecutor[Out[+_], Key,Value](implicit fm:Monad[Out]) extends QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] with Directives[Out] {
+trait InMemoryKeyValueQueryExecutor[Out[+_], Key, Value]extends QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] with Directives[Out] {
 
-  def state:AtomicReference[Map[Key, Value]]
+  protected def state:AtomicReference[Map[Key, Value]]
 
   def execute = {
     case Contains(key) =>
@@ -20,6 +20,5 @@ abstract class InMemoryKeyValueQueryExecutor[Out[+_], Key,Value](implicit fm:Mon
 
     case Values() =>
       unit(state.get().valuesIterator)
-      
   }
 }

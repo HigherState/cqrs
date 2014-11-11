@@ -1,8 +1,8 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Dispatcher, CqrsService, Iter}
+import org.higherState.cqrs.{Service, Dispatcher, Iter}
 
-case class AuthenticationService[Out[+_]](dispatcher:Dispatcher[Out]) extends CqrsService[Out] {
+class AuthenticationService[Out[+_]](dispatcher:Dispatcher[Out, AuthenticationCommand, AuthenticationQueryParameters]) extends Service[Out] {
 
   def createNewUser(userLogin:UserLogin, password:Password) =
     dispatcher.sendCommand(CreateNewUser(userLogin, password))

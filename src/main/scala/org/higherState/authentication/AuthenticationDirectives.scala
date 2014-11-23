@@ -1,13 +1,14 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ServicePipe, Pipe, FailureDirectives}
+import org.higherState.cqrs.{ServicePipe, FailureDirectives}
 import org.higherState.repository.KeyValueRepository
+import scalaz.~>
 
 trait AuthenticationDirectives[In[+_], Out[+_]] extends FailureDirectives[Out] {
 
   import ServicePipe._
 
-  implicit protected def pipe:Pipe[In, Out]
+  implicit protected def pipe: ~>[In, Out]
   protected def repository:KeyValueRepository[In, UserLogin, UserCredentials]
 
   protected def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =

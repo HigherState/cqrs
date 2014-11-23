@@ -1,8 +1,6 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Pipe, ServicePipe, QueryExecutor}
-import org.higherState.repository.KeyValueRepository
-import scalaz.Monad
+import org.higherState.cqrs.{ServicePipe, QueryExecutor}
 
 trait AuthenticationQueryExecutor[In[+_], Out[+_]] extends QueryExecutor[Out, AuthenticationQueryParameters] with AuthenticationDirectives[In, Out] {
 

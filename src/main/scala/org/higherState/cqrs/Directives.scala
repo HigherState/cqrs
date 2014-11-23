@@ -23,6 +23,14 @@ trait Directives[Out[+_]] {
 
 }
 
+trait FailureDirectives[Out[+_]] extends Directives[Out] {
+
+  def failure[T](failure: => ValidationFailure):Out[T]
+
+  def failure[T](failed: => NonEmptyList[ValidationFailure]):Out[T]
+
+}
+
 trait MonadicDirectives[Out[+_]] extends Directives[Out]{
 
   import scalaz.std.list._
@@ -55,27 +63,15 @@ trait MonadicDirectives[Out[+_]] extends Directives[Out]{
 
 }
 
-trait FailureDirectives[Out[+_]] extends Directives[Out] {
+trait MonadicFailureDirectives[Out[+_]] extends MonadicDirectives[Out] with FailureDirectives[Out] {
 
-  def failure[T](failure: => ValidationFailure):Out[T] = ???
+  implicit protected def fm:Monad[Out] with Failure[Out]
 
-  def failures[T](failed: => NonEmptyList[ValidationFailure]):Out[T] = ???
+  def failure[T](failure: => ValidationFailure): Out[T] =
+    fm.failed(failure)
 
-  def failures[T](head:ValidationFailure, tail:Seq[ValidationFailure]):Out[T]
-  = ???
-
-  def onValid[T, U](v:Valid[T])(f:T => Out[U]):Out[U] =
-    v match {
-      case Success(t) =>
-        f(t)
-      case Failure(vf) =>
-        failures[U](vf)
-    }
-
-  def onFailure[T](value:Out[T])(f:NonEmptyList[ValidationFailure] => Out[T]):Out[T]
-    = ???
-
-  def validationSequence[T,U](v:Iter[Out[T]])(f:Iter[Valid[T]] => Out[U]):Out[U]
-    = ???
-
+  def failure[T](failures: => NonEmptyList[ValidationFailure]): Out[T] =
+    fm.failed(failures)
 }
+
+

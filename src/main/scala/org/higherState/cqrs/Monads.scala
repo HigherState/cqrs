@@ -3,6 +3,13 @@ package org.higherState.cqrs
 import scalaz._
 
 import scalaz.Success
+import scala.concurrent.ExecutionContext
+
+trait Failure[F[_]] {
+  def failed(failure:ValidationFailure):F[Nothing]
+
+  def failed(failures:NonEmptyList[ValidationFailure]):F[Nothing]
+}
 
 trait IdentityMonad {
 
@@ -15,11 +22,17 @@ trait IdentityMonad {
 
 trait ScalazMonads {
 
-  implicit val validation = new Monad[Valid] {
+  implicit val validation = new Monad[Valid] with Failure[Valid] {
     def bind[A, B](fa: Valid[A])(f: (A) => Valid[B]): Valid[B] =
       fa.flatMap(f)
     def point[A](a: => A): Valid[A] =
       Success(a)
+
+    def failed(failure: ValidationFailure): Valid[Nothing] =
+      Failure(NonEmptyList(failure))
+
+    def failed(failures: NonEmptyList[ValidationFailure]): Valid[Nothing] =
+      Failure(failures)
   }
 
   implicit val eitherValid = new Monad[EitherValid] {
@@ -69,16 +82,12 @@ trait FutureMonadz {
 trait FutureMonads {
   import scala.concurrent.Future
 
-  implicit val future = new Monad[Future] {
-    def bind[A, B](fa: Future[A])(f: (A) => Future[B]): Future[B] =
-      FlattenFuture(fa)(f)
-    def point[A](a: => A): Future[A] =
-      Future.successful(a)
-  }
+  implicit def futureMonad(implicit ec: ExecutionContext): Monad[Future]  =
+    scalaz.std.scalaFuture.futureInstance(ec)
 
-  implicit val futureValidation = new Monad[FutureValid] {
+  implicit def futureValidMonad(implicit ec: ExecutionContext): Monad[FutureValid] = new Monad[FutureValid] {
     def bind[A, B](fa: FutureValid[A])(f: (A) => FutureValid[B]): FutureValid[B] =
-      FlattenFuture(fa) {
+      fa.flatMap {
         case Failure(vf) =>
           Future.successful(Failure(vf))
         case Success(t) =>
@@ -89,9 +98,9 @@ trait FutureMonads {
       Future.successful(Success(a))
   }
 
-  implicit val futureEitherValid = new Monad[FutureEitherValid] {
+  implicit def futureEitherValid(implicit ec: ExecutionContext):Monad[FutureEitherValid] = new Monad[FutureEitherValid] {
     def bind[A, B](fa: FutureEitherValid[A])(f: (A) => FutureEitherValid[B]): FutureEitherValid[B] =
-      FlattenFuture(fa) {
+      fa.flatMap {
         case -\/(vf) =>
           Future.successful(-\/(vf))
         case \/-(t) =>

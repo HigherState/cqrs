@@ -1,8 +1,6 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Pipe, ServicePipe, CommandHandler}
-import org.higherState.repository.KeyValueRepository
-import scalaz.Monad
+import org.higherState.cqrs.{ ServicePipe, CommandHandler}
 
 trait AuthenticationCommandHandler[In[+_], Out[+_]] extends CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
 

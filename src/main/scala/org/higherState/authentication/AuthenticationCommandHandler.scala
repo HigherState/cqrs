@@ -43,7 +43,7 @@ trait AuthenticationCommandHandler[In[+_], Out[+_]] extends CommandHandler[Out, 
           val newCount = uc.failureCount + 1
           repository += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries)
         case None =>
-          complete
+          point()
       }
 
     case ResetFailureCount(userLogin) =>
@@ -51,7 +51,7 @@ trait AuthenticationCommandHandler[In[+_], Out[+_]] extends CommandHandler[Out, 
         case Some(uc) =>
           repository += uc.userLogin -> uc.copy(failureCount = 0)
         case None =>
-          complete
+          point()
       }
   }
 }

@@ -1,24 +1,24 @@
 package org.higherState.repository
 
-import org.higherState.cqrs.{Directives, QueryExecutor}
+import org.higherState.cqrs.QueryExecutor
 import java.util.concurrent.atomic.AtomicReference
 import scalaz.Monad
 
-trait InMemoryKeyValueQueryExecutor[Out[+_], Key, Value]extends QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] with Directives[Out] {
+trait InMemoryKeyValueQueryExecutor[Out[+_], Key, Value]extends QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] with Monad[Out] {
 
   protected def state:AtomicReference[Map[Key, Value]]
 
   def execute = {
     case Contains(key) =>
-      unit(state.get().contains(key))
+      point(state.get().contains(key))
 
     case Get(key) =>
-      unit(state.get().get(key))
+      point(state.get().get(key))
 
     case Iterator() =>
-      unit(state.get().iterator)
+      point(state.get().iterator)
 
     case Values() =>
-      unit(state.get().valuesIterator)
+      point(state.get().valuesIterator)
   }
 }

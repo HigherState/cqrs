@@ -11,41 +11,45 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.higherState.repository.HashMapRepository
 import scala.concurrent.{Future, ExecutionContext}
-import org.higherState.cqrs.akkaPattern.{ActorDispatcherFactory, ActorAdapter}
+import org.higherState.cqrs.adapters.{ActorDispatcherFactory, ActorAdapter}
 import scalaz.{~>, Monad}
+import org.higherState.cqrs.std._
 
 class AuthenticationCommandHandlerImpl[In[+_],Out[+_]]
   (val maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val fm:Monad[Out] with Failure[Out])
-  extends AuthenticationCommandHandler[In, Out] with MonadicFailureDirectives[Out]
+  (implicit val pipe: ~>[In,Out], val validator:Validator[Out])
+  extends AuthenticationCommandHandler[In, Out] with ValidatorBind[Out]
+
 class AuthenticationQueryExecutorImpl[In[+_],Out[+_]]
   (val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val fm:Monad[Out] with Failure[Out])
-  extends AuthenticationQueryExecutor[In, Out] with MonadicFailureDirectives[Out]
+  (implicit val pipe: ~>[In,Out], val validator:Validator[Out])
+  extends AuthenticationQueryExecutor[In, Out] with ValidatorBind[Out]
 
 class AuthenticationCommandHandlerActorImpl[In[+_],Out[+_]]
   (val maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val fm:Monad[Out] with Failure[Out], val executionContext:ExecutionContext)
-  extends AuthenticationCommandHandler[In, Out] with MonadicFailureDirectives[Out] with ActorAdapter
+  (implicit val pipe: ~>[In,Out], val validator:Validator[Out], val executionContext:ExecutionContext)
+  extends AuthenticationCommandHandler[In, Out] with ValidatorBind[Out] with ActorAdapter
 class AuthenticationQueryExecutorActorImpl[In[+_],Out[+_]]
   (val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val fm:Monad[Out with Failure[Out]], val executionContext:ExecutionContext)
-  extends AuthenticationQueryExecutor[In, Out] with MonadicFailureDirectives[Out] with ActorAdapter
+  (implicit val pipe: ~>[In,Out], val validator:Validator[Out], val executionContext:ExecutionContext)
+  extends AuthenticationQueryExecutor[In, Out] with ValidatorBind[Out] with ActorAdapter
 
 class InMemoryKeyValueCommandHandlerActorImpl[Out[+_], Key, Value]
   (val state:AtomicReference[Map[Key, Value]])
-  (implicit val fm:Monad[Out], val executionContext:ExecutionContext)
-  extends InMemoryKeyValueCommandHandler[Out, Key, Value] with MonadicDirectives[Out] with ActorAdapter
+  (implicit val monad:Monad[Out], val executionContext:ExecutionContext)
+  extends InMemoryKeyValueCommandHandler[Out, Key, Value] with MonadBind[Out] with ActorAdapter
 class InMemoryKeyValueQueryExecutorActorImpl[Out[+_], Key, Value]
   (val state:AtomicReference[Map[Key, Value]])
-  (implicit val fm:Monad[Out], val executionContext:ExecutionContext)
-  extends InMemoryKeyValueQueryExecutor[Out, Key, Value] with MonadicDirectives[Out] with ActorAdapter
+  (implicit val monad:Monad[Out], val executionContext:ExecutionContext)
+  extends InMemoryKeyValueQueryExecutor[Out, Key, Value] with MonadBind[Out] with ActorAdapter
 
 class InstanceTests extends FunSuite with Matchers with ScalaFutures with BeforeAndAfter {
 
   import scala.concurrent.duration._
   import NaturalTransforms._
-  import Monads._
+  import FutureMonad._
+  import IdMonad._
+  import ValidationValidator._
 
   implicit val system = ActorSystem("System")
   implicit val exectionContext:ExecutionContext = system.dispatcher
@@ -57,8 +61,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
       new HashMapRepository(mutable.HashMap.empty[UserLogin, UserCredentials])
 
     //Identity authentication service
-    val ch = new AuthenticationCommandHandlerImpl[Identity, Valid](10, testHashRepository){}
-    val qe = new AuthenticationQueryExecutorImpl[Identity, Valid](testHashRepository){}
+    val ch = new AuthenticationCommandHandlerImpl[Id, Valid](10, testHashRepository){}
+    val qe = new AuthenticationQueryExecutorImpl[Id, Valid](testHashRepository){}
     val testAuthenticationService = new AuthenticationService(Dispatcher(ch, qe))
 
     testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success())
@@ -70,8 +74,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     //CQRS actors repository service.
     //Single command handler actor and single query executor actor
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
-    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandlerActorImpl[Identity, UserLogin, UserCredentials](atomicHashMap)))
-    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutorActorImpl[Identity, UserLogin, UserCredentials](atomicHashMap)))
+    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandlerActorImpl[Id, UserLogin, UserCredentials](atomicHashMap)))
+    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutorActorImpl[Id, UserLogin, UserCredentials](atomicHashMap)))
     val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](ActorDispatcherFactory.future(repositoryCommandHandler, repositoryQueryExecutor))
 
     val authCommandHandler = new AuthenticationCommandHandlerImpl[Future, FutureValid](10, akkaCqrsRepository)
@@ -98,8 +102,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     val testHashRepository =
       new HashMapRepository(mutable.HashMap.empty[UserLogin, UserCredentials])
 
-    val authCommandHandler = system.actorOf(Props(new AuthenticationCommandHandlerActorImpl[Identity, FutureValid](10, testHashRepository)))
-    val authQueryExecutor = system.actorOf(Props(new AuthenticationQueryExecutorActorImpl[Identity, FutureValid](testHashRepository)))
+    val authCommandHandler = system.actorOf(Props(new AuthenticationCommandHandlerActorImpl[Id, FutureValid](10, testHashRepository)))
+    val authQueryExecutor = system.actorOf(Props(new AuthenticationQueryExecutorActorImpl[Id, FutureValid](testHashRepository)))
     val akkaCqrsAuthenticationService = new AuthenticationService[FutureValid](ActorDispatcherFactory.futureValid(authCommandHandler, authQueryExecutor))
 
     whenReady(akkaCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>
@@ -115,8 +119,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
 
   test("CQRS actor authentication piping from actor repository service") {
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
-    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandlerActorImpl[Identity, UserLogin, UserCredentials](atomicHashMap)))
-    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutorActorImpl[Identity, UserLogin, UserCredentials](atomicHashMap)))
+    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandlerActorImpl[Id, UserLogin, UserCredentials](atomicHashMap)))
+    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutorActorImpl[Id, UserLogin, UserCredentials](atomicHashMap)))
     val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](ActorDispatcherFactory.future(repositoryCommandHandler, repositoryQueryExecutor))
 
     val authCommandHandler = system.actorOf(Props(new AuthenticationCommandHandlerActorImpl[Future, FutureValid](10, akkaCqrsRepository)))

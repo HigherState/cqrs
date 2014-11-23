@@ -40,7 +40,7 @@ class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:Dispatcher[Out, Key
 }
 
 // simple repository for testing
-class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Identity, Key, Value] {
+class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Id, Key, Value] {
   def -=(key: Key) {
     state -= key
   }

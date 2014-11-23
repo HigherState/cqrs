@@ -12,7 +12,7 @@ trait AuthenticationQueryExecutor[In[+_], Out[+_]] extends QueryExecutor[Out, Au
         case UserCredentials(actualUserLogin, _, true, _) =>
           failure(UserLockedFailure(actualUserLogin))
         case UserCredentials(actualUserLogin, _, _, _) =>
-          unit(actualUserLogin)
+          point(actualUserLogin)
       }
 
     case GetLockedUserLogins =>

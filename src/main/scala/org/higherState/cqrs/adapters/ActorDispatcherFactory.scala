@@ -1,4 +1,4 @@
-package org.higherState.cqrs.akkaPattern
+package org.higherState.cqrs.adapters
 
 import org.higherState.cqrs._
 import scala.concurrent.Future

@@ -9,14 +9,14 @@ package object cqrs {
   //because typing traversableOnce all the time is a pain
   type Iter[+A] = TraversableOnce[A]
 
-  type Valid[+T] = ValidationNel[ValidationFailure, T]
+  type ValidE[+E] = Valid[E, _]
 
-  type EitherValid[+T] = scalaz.\/[ValidationFailures, T]
+  type Valid[+E, +T] = ValidationNel[E, T]
 
-  type ValidationFailures = NonEmptyList[ValidationFailure]
+  type EitherValid[+E, +T] = scalaz.\/[NonEmptyList[E], T]
 
-  type FutureValid[+T] = Future[ValidationNel[ValidationFailure, T]]
+  type FutureValid[+E, +T] = Future[ValidationNel[E, T]]
 
-  type FutureEitherValid[+T] = Future[EitherValid[T]]
+  type FutureEitherValid[+E, +T] = Future[EitherValid[E, T]]
 
 }

@@ -4,14 +4,15 @@ import scalaz.~>
 import scala.concurrent.ExecutionContext
 import org.higherState.cqrs._
 
+
 trait IdentityTransforms {
 
-  implicit val IdentityIdentityPipe = new ~>[Id, Id] {
-    def apply[A](fa: Id[A]): Id[A] = fa
+  implicit def DirectPipe[T[_]] = new ~>[T, T] {
+    def apply[A](fa: T[A]): T[A] = fa
   }
 
-  implicit val IdentityValidationPipe = new ~>[Id, Valid] {
-    def apply[A](fa: Id[A]): Valid[A] =
+  implicit def IdentityValidationPipe[E] = new ~>[Id, ({type V[+T] = Valid[E,T]})#V] {
+    def apply[A](fa: Id[A]): Valid[E, A] =
       scalaz.Success(fa)
   }
 
@@ -20,21 +21,16 @@ trait IdentityTransforms {
       scala.concurrent.Future.successful(value)
   }
 
-  implicit val IdentityFutureValidPipe = new ~>[Id, FutureValid] {
-    def apply[T](value: Id[T]): FutureValid[T] =
+  implicit def IdentityFutureValidPipe[E] = new ~>[Id, ({type V[+T] = FutureValid[E,T]})#V] {
+    def apply[T](value: Id[T]): FutureValid[E, T] =
       scala.concurrent.Future.successful(scalaz.Success(value))
   }
 }
 
 trait ValidTransforms {
 
-  implicit val ValidationValidationPipe = new ~>[Valid, Valid] {
-    def apply[T](value: Valid[T]): Valid[T] =
-      value
-  }
-
-  implicit val ValidationFutureValidPipe = new ~>[Valid, FutureValid] {
-    def apply[T](value: Valid[T]): FutureValid[T] =
+  implicit def ValidationFutureValidPipe[E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,  ({type V[+T] = FutureValid[E,T]})#V] {
+    def apply[T](value: Valid[E, T]): FutureValid[E, T] =
       scala.concurrent.Future.successful(value)
   }
 }
@@ -42,24 +38,11 @@ trait ValidTransforms {
 trait FutureTransforms {
   import scala.concurrent.Future
 
-  implicit val FutureFuturePipe = new ~>[Future, Future] {
-    def apply[T](value: Future[T]): Future[T] =
-      value
-  }
-
-  implicit def FutureFutureValidationPipe(implicit ec:ExecutionContext) =
-    new ~>[Future, FutureValid] {
-      def apply[T](value: Future[T]): FutureValid[T] =
+  implicit def FutureFutureValidationPipe[E](implicit ec:ExecutionContext) =
+    new ~>[Future, ({type V[+T] = FutureValid[E,T]})#V] {
+      def apply[T](value: Future[T]): FutureValid[E,T] =
         value.map(scalaz.Success(_))
     }
 }
 
-trait FutureValidTransforms {
-
-  implicit val FutureValidationFutureValidationPipe = new ~>[FutureValid, FutureValid] {
-    def apply[T](value:FutureValid[T]): FutureValid[T] =
-      value
-  }
-}
-
-object NaturalTransforms extends IdentityTransforms with ValidTransforms with FutureTransforms with FutureValidTransforms
+object NaturalTransforms extends IdentityTransforms with ValidTransforms with FutureTransforms

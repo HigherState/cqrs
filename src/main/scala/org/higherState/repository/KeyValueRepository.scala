@@ -18,7 +18,7 @@ trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
   def -= (key:Key):Out[Unit]
 }
 
-class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:Dispatcher[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
+class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:CQDispatcher[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
     dispatcher.executeQuery[Boolean](Contains(key))

@@ -14,9 +14,9 @@ trait MonadBind[Out[+_]] extends Monad[Out]{
     monad.point(a)
 }
 
-trait ValidatorBind[Out[+_]] extends Validator[Out] {
+trait ValidatorBind[E,Out[+_]] extends Validator[E, Out] {
 
-  implicit protected def validator:Validator[Out]
+  implicit protected def validator:Validator[E, Out]
 
   def bind[A, B](fa: Out[A])(f: (A) => Out[B]): Out[B] =
     validator.bind(fa)(f)
@@ -24,10 +24,10 @@ trait ValidatorBind[Out[+_]] extends Validator[Out] {
   def point[A](a: => A): Out[A] =
     validator.point(a)
 
-  def failure(validationFailure: => ValidationFailure): Out[Nothing] =
+  def failure(validationFailure: => E): Out[Nothing] =
     validator.failure(validationFailure)
 
-  def failures(validationFailures: => NonEmptyList[ValidationFailure]): Out[Nothing] =
+  def failures(validationFailures: => NonEmptyList[E]): Out[Nothing] =
     validator.failures(validationFailures)
 }
 

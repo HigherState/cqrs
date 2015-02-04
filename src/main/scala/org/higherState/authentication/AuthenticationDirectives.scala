@@ -1,10 +1,10 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Validator, ServicePipe}
+import org.higherState.cqrs.{ValidationFailure, Validator, ServicePipe}
 import org.higherState.repository.KeyValueRepository
 import scalaz.~>
 
-trait AuthenticationDirectives[In[+_], Out[+_]] extends Validator[Out] {
+trait AuthenticationDirectives[In[+_], Out[+_]] extends Validator[ValidationFailure, Out] {
 
   import ServicePipe._
 

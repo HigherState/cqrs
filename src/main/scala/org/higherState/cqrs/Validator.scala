@@ -3,9 +3,9 @@ package org.higherState.cqrs
 import scalaz.{NonEmptyList, Monad}
 
 //TODO: Better name
-trait Validator[Out[+_]] extends Monad[Out] {
+trait Validator[E, Out[+_]] extends Monad[Out] {
 
-  def failure(validationFailure: => ValidationFailure):Out[Nothing]
+  def failure(validationFailure: => E):Out[Nothing]
 
-  def failures(validationFailures: => NonEmptyList[ValidationFailure]):Out[Nothing]
+  def failures(validationFailures: => NonEmptyList[E]):Out[Nothing]
 }

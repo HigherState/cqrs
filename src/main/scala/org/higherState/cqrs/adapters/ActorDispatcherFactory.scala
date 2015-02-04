@@ -11,7 +11,7 @@ object ActorDispatcherFactory {
   import akka.pattern.ask
 
   def future[C <: Command, QP <: QueryParameters](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout) =
-    new Dispatcher[Future, C, QP] {
+    new CQDispatcher[Future, C, QP] {
 
       def sendCommand(c: => C): Future[Unit] =
         commandHandler
@@ -24,16 +24,16 @@ object ActorDispatcherFactory {
           .mapTo[T]
     }
 
-  def futureValid[C <: Command, QP <: QueryParameters](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout) =
-    new Dispatcher[FutureValid, C, QP] {
-      def sendCommand(c: => C): FutureValid[Unit] =
+  def futureValid[C <: Command, QP <: QueryParameters, E](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout) =
+    new CQDispatcher[({type V[+T] = FutureValid[E,T]})#V, C, QP] {
+      def sendCommand(c: => C): FutureValid[E, Unit] =
         commandHandler
           .ask(c)
-          .mapTo[Valid[Unit]]
+          .mapTo[Valid[E, Unit]]
 
-      def executeQuery[T: ClassTag](qp: => QP): FutureValid[T] =
+      def executeQuery[T: ClassTag](qp: => QP): FutureValid[E, T] =
         queryExecutor
           .ask(qp)
-          .mapTo[Valid[T]]
+          .mapTo[Valid[E, T]]
     }
 }

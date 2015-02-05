@@ -1,7 +1,5 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.ValidationFailure
-
 trait AuthenticationFailure extends ValidationFailure
 
 case class UserLockedFailure(userLogin:UserLogin) extends AuthenticationFailure

@@ -2,6 +2,7 @@ package org.higherState.repository
 
 import org.higherState.cqrs._
 import scala.collection.mutable
+import org.higherState.cqrs.std.Id
 
 trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
 
@@ -9,9 +10,9 @@ trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
 
   def get(key:Key):Out[Option[Value]]
 
-  def iterator:Out[Iter[(Key, Value)]]
+  def iterator:Out[TraversableOnce[(Key, Value)]]
 
-  def values:Out[Iter[Value]]
+  def values:Out[TraversableOnce[Value]]
 
   def += (kv:(Key, Value)):Out[Unit]
 
@@ -26,11 +27,11 @@ class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:CQDispatcher[Out, K
   def get(key:Key):Out[Option[Value]] =
     dispatcher.executeQuery[Option[Value]](Get(key))
 
-  def iterator:Out[Iter[(Key, Value)]] =
-    dispatcher.executeQuery[Iter[(Key, Value)]](Iterator())
+  def iterator:Out[TraversableOnce[(Key, Value)]] =
+    dispatcher.executeQuery[TraversableOnce[(Key, Value)]](Iterator())
 
-  def values:Out[Iter[Value]] =
-    dispatcher.executeQuery[Iter[Value]](Values())
+  def values:Out[TraversableOnce[Value]] =
+    dispatcher.executeQuery[TraversableOnce[Value]](Values())
 
   def += (kv:(Key, Value)):Out[Unit] =
     dispatcher.sendCommand(Add(kv))

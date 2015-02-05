@@ -1,13 +1,14 @@
-package org.higherState
+package org.higherState.cqrs
 
 import scalaz._
 import scala.concurrent.Future
 
-package object cqrs {
+/**
+ * Created by jamie.pullar on 04/02/2015.
+ */
+package object std {
 
   type Id[+T] = T
-  //because typing traversableOnce all the time is a pain
-  type Iter[+A] = TraversableOnce[A]
 
   type ValidE[+E] = Valid[E, _]
 

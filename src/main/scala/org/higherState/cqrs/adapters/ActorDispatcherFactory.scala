@@ -5,6 +5,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import akka.actor.ActorRef
 import akka.util.Timeout
+import org.higherState.cqrs.std.{Valid, FutureValid}
 
 object ActorDispatcherFactory {
 

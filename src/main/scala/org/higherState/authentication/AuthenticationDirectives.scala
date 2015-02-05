@@ -1,6 +1,6 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ValidationFailure, Validator, ServicePipe}
+import org.higherState.cqrs.{Validator, ServicePipe}
 import org.higherState.repository.KeyValueRepository
 import scalaz.~>
 

@@ -1,6 +1,6 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Service, CQDispatcher, Iter}
+import org.higherState.cqrs.{Service, CQDispatcher}
 
 class AuthenticationService[Out[+_]](dispatcher:CQDispatcher[Out, AuthenticationCommand, AuthenticationQueryParameters]) extends Service[Out] {
 
@@ -26,6 +26,6 @@ class AuthenticationService[Out[+_]](dispatcher:CQDispatcher[Out, Authentication
     dispatcher.executeQuery[UserLogin](Authenticate(userLogin, password))
 
   def getLockedUserLogins =
-    dispatcher.executeQuery[Iter[(UserLogin, Int)]](GetLockedUserLogins)
+    dispatcher.executeQuery[TraversableOnce[(UserLogin, Int)]](GetLockedUserLogins)
 
 }

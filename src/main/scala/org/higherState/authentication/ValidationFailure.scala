@@ -1,4 +1,4 @@
-package org.higherState.cqrs
+package org.higherState.authentication
 
 trait ValidationFailure
 

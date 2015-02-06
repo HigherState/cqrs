@@ -17,6 +17,8 @@ trait ActorAdapter extends akka.actor.Actor {
       handleCommand(ch).andThen(pipeSender)
     case qe: QueryExecutor[_, QueryParameters@unchecked] =>
       executeQuery(qe).andThen(pipeSender)
+    case m: MessageReceiver[_, Message@unchecked] =>
+      sendMessage(m).andThen(pipeSender)
   }
 
   private def handleCommand[Out[+_]](ch: CommandHandler[Out, Command]): PartialFunction[Any, Any] = {
@@ -27,6 +29,11 @@ trait ActorAdapter extends akka.actor.Actor {
   private def executeQuery[Out[+_]](qe: QueryExecutor[Out, QueryParameters]): PartialFunction[Any, Any] = {
     case qp: QueryParameters =>
       qe.execute(qp)
+  }
+
+  private def sendMessage[Out[+_]](mr: MessageReceiver[Out, Message]): PartialFunction[Any, Any] = {
+    case m:Message =>
+      mr.handle(m)
   }
 
   private def pipeSender: PartialFunction[Any, Unit] = {

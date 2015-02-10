@@ -32,6 +32,22 @@ object CQDispatcher {
       def executeQuery[T: ClassTag](qp: => QP): Out[T] =
         queryExecutor.execute(qp).asInstanceOf[Out[T]]
     }
+
+  def apply[Out[+_], C <: Command](commandHandler:CommandHandler[Out, C]) =
+    new CQDispatcher[Out, C, Nothing] {
+      def sendCommand(c: => C): Out[Unit] =
+        commandHandler.handle(c)
+      def executeQuery[T: ClassTag](qp: => Nothing): Out[T] = ???
+    }
+
+  def apply[Out[+_], QP <: QueryParameters](queryExecutor:QueryExecutor[Out, QP]) =
+    new CQDispatcher[Out, Nothing, QP] {
+
+      def sendCommand(c: => Nothing): Out[Unit] = ???
+
+      def executeQuery[T: ClassTag](qp: => QP): Out[T] =
+        queryExecutor.execute(qp).asInstanceOf[Out[T]]
+    }
 }
 
 

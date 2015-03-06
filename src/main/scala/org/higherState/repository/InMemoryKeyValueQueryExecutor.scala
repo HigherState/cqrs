@@ -1,10 +1,10 @@
 package org.higherState.repository
 
-import org.higherState.cqrs.QueryExecutor
+import org.higherState.cqrs.{MonadBound, QueryExecutor}
 import java.util.concurrent.atomic.AtomicReference
 import scalaz.Monad
 
-trait InMemoryKeyValueQueryExecutor[Out[+_], Key, Value]extends QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] with Monad[Out] {
+abstract class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value] extends MonadBound[Out] with QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] {
 
   protected def state:AtomicReference[Map[Key, Value]]
 

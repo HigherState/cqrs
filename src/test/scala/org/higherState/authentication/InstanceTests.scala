@@ -17,31 +17,29 @@ import org.higherState.cqrs.std._
 
 class AuthenticationCommandHandlerImpl[In[+_],Out[+_]]
   (val maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val validator:Validator[ValidationFailure, Out])
-  extends AuthenticationCommandHandler[In, Out] with ValidatorBind[ValidationFailure, Out]
+  (implicit val pipe: ~>[In,Out], val monad:FMonad[ValidationFailure, Out])
+  extends AuthenticationCommandHandler[In, Out] with FMonadBind[ValidationFailure, Out]
 
 class AuthenticationQueryExecutorImpl[In[+_],Out[+_]]
   (val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val validator:Validator[ValidationFailure,Out])
-  extends AuthenticationQueryExecutor[In, Out] with ValidatorBind[ValidationFailure,Out]
+  (implicit val pipe: ~>[In,Out], val monad:FMonad[ValidationFailure,Out])
+  extends AuthenticationQueryExecutor[In, Out] with FMonadBind[ValidationFailure,Out]
 
 class AuthenticationCommandHandlerActorImpl[In[+_],Out[+_]]
   (val maxNumberOfTries:Int, val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val validator:Validator[ValidationFailure, Out], val executionContext:ExecutionContext)
-  extends AuthenticationCommandHandler[In, Out] with ValidatorBind[ValidationFailure, Out] with ActorAdapter
+  (implicit val pipe: ~>[In,Out], val monad:FMonad[ValidationFailure, Out])
+  extends AuthenticationCommandHandler[In, Out] with FMonadBind[ValidationFailure, Out] with ActorAdapter
 class AuthenticationQueryExecutorActorImpl[In[+_],Out[+_]]
   (val repository:KeyValueRepository[In, UserLogin, UserCredentials])
-  (implicit val pipe: ~>[In,Out], val validator:Validator[ValidationFailure, Out], val executionContext:ExecutionContext)
-  extends AuthenticationQueryExecutor[In, Out] with ValidatorBind[ValidationFailure, Out] with ActorAdapter
+  (implicit val pipe: ~>[In,Out], val monad:FMonad[ValidationFailure, Out])
+  extends AuthenticationQueryExecutor[In, Out] with FMonadBind[ValidationFailure, Out] with ActorAdapter
 
-class InMemoryKeyValueCommandHandlerActorImpl[Out[+_], Key, Value]
+class InMemoryKeyValueCommandHandlerActorImpl[Out[+_]:Monad, Key, Value]
   (val state:AtomicReference[Map[Key, Value]])
-  (implicit val monad:Monad[Out], val executionContext:ExecutionContext)
-  extends InMemoryKeyValueCommandHandler[Out, Key, Value] with MonadBind[Out] with ActorAdapter
-class InMemoryKeyValueQueryExecutorActorImpl[Out[+_], Key, Value]
+  extends InMemoryKeyValueCommandHandler[Out, Key, Value] with ActorAdapter
+class InMemoryKeyValueQueryExecutorActorImpl[Out[+_]:Monad, Key, Value]
   (val state:AtomicReference[Map[Key, Value]])
-  (implicit val monad:Monad[Out], val executionContext:ExecutionContext)
-  extends InMemoryKeyValueQueryExecutor[Out, Key, Value] with MonadBind[Out] with ActorAdapter
+  extends InMemoryKeyValueQueryExecutor[Out, Key, Value] with ActorAdapter
 
 class InstanceTests extends FunSuite with Matchers with ScalaFutures with BeforeAndAfter {
 
@@ -140,4 +138,5 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
       }
     }
   }
+
 }

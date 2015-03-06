@@ -1,12 +1,10 @@
 package org.higherState.cqrs.adapters
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import org.higherState.cqrs._
-import akka.pattern.pipe
+import akka.pattern.PipeableFuture
 
 trait ActorAdapter extends akka.actor.Actor {
-
-  implicit def executionContext:ExecutionContext
 
   def receive = handler
 
@@ -38,7 +36,7 @@ trait ActorAdapter extends akka.actor.Actor {
 
   private def pipeSender: PartialFunction[Any, Unit] = {
     case f:Future[_] =>
-      f pipeTo sender
+      new PipeableFuture(f)(this.context.dispatcher) pipeTo sender
     case a =>
       sender ! a
   }

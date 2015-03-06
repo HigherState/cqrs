@@ -15,7 +15,7 @@ object EitherValidValidator extends EitherValidValidator
 
 trait ValidationValidator {
 
-  implicit def validationValidator[E] = new Validator[E, ({type V[+T] = Valid[E,T]})#V] {
+  implicit def vNelFMonad[E] = new FMonad[E, ({type V[+T] = Valid[E,T]})#V] {
     def bind[A, B](fa: Valid[E, A])(f: (A) => Valid[E, B]): Valid[E, B] =
       fa.flatMap(f)
 
@@ -28,27 +28,27 @@ trait ValidationValidator {
     def failure(validationFailure: => E): Valid[E, Nothing] =
       Failure(NonEmptyList(validationFailure))
   }
-  implicit def futureValidationValidator[E](implicit monad:Monad[Future]):Validator[E, ({type V[+T] = FutureValid[E,T]})#V] =
-    new Validator[E, ({type V[+T] = FutureValid[E,T]})#V] {
+  implicit def futureVNelFMonad[E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] =
+    new FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] {
       def bind[A, B](fa: FutureValid[E, A])(f: (A) => FutureValid[E, B]): FutureValid[E, B] =
         monad.bind(fa) {
           case Failure(vf) =>
-            monad.point(validationValidator.failures(vf))
+            monad.point(vNelFMonad.failures(vf))
           case Success(s) => f(s)
         }
 
       def point[A](a: => A): FutureValid[E, A] =
-        monad.point(validationValidator.point(a))
+        monad.point(vNelFMonad.point(a))
 
       def failure(validationFailure: => E): FutureValid[E, Nothing] =
-        monad.point(validationValidator.failure(validationFailure))
+        monad.point(vNelFMonad.failure(validationFailure))
 
       def failures(validationFailures: => NonEmptyList[E]):FutureValid[E, Nothing] =
-        monad.point(validationValidator.failures(validationFailures))
+        monad.point(vNelFMonad.failures(validationFailures))
     }
 }
 trait EitherValidValidator {
-  implicit def eitherValidator[E] = new Validator[E, ({type V[+T] = EitherValid[E,T]})#V] {
+  implicit def disFMonad[E] = new FMonad[E, ({type V[+T] = EitherValid[E,T]})#V] {
     def bind[A, B](fa: EitherValid[E, A])(f: (A) => EitherValid[E, B]): EitherValid[E, B] =
       fa.flatMap(f)
     def point[A](a: => A): EitherValid[E, A] =
@@ -60,23 +60,23 @@ trait EitherValidValidator {
     def failures(validationFailures: => NonEmptyList[E]): EitherValid[E, Nothing] =
       -\/(validationFailures)
   }
-  implicit def futureEitherValidator[E](implicit monad:Monad[Future]):Validator[E, ({type V[+T] = FutureEitherValid[E,T]})#V] =
-    new Validator[E, ({type V[+T] = FutureEitherValid[E,T]})#V] {
+  implicit def futureDisFMonad[E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = FutureEitherValid[E,T]})#V] =
+    new FMonad[E, ({type V[+T] = FutureEitherValid[E,T]})#V] {
       def bind[A, B](fa: FutureEitherValid[E, A])(f: (A) => FutureEitherValid[E, B]): FutureEitherValid[E, B] =
         monad.bind(fa) {
           case -\/(vf) =>
-            monad.point(eitherValidator.failures(vf))
+            monad.point(disFMonad.failures(vf))
           case \/-(s) => f(s)
         }
 
       def point[A](a: => A): FutureEitherValid[E, A] =
-        monad.point(eitherValidator.point(a))
+        monad.point(disFMonad.point(a))
 
       def failure(validationFailure: => E): FutureEitherValid[E, Nothing] =
-        monad.point(eitherValidator.failure(validationFailure))
+        monad.point(disFMonad.failure(validationFailure))
 
       def failures(validationFailures: => NonEmptyList[E]):FutureEitherValid[E, Nothing] =
-        monad.point(eitherValidator.failures(validationFailures))
+        monad.point(disFMonad.failures(validationFailures))
     }
 
 }

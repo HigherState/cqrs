@@ -3,9 +3,6 @@ package org.higherState.cqrs
 import scalaz._
 import scala.concurrent.Future
 
-/**
- * Created by jamie.pullar on 04/02/2015.
- */
 package object std {
 
   type Id[+T] = T

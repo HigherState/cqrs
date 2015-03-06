@@ -47,7 +47,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
   import NaturalTransforms._
   import FutureMonad._
   import IdMonad._
-  import ValidationValidator._
+  import VFMonad._
 
   implicit val system = ActorSystem("System")
   implicit val exectionContext:ExecutionContext = system.dispatcher

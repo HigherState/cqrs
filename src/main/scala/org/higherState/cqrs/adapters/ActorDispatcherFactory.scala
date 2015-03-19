@@ -3,9 +3,10 @@ package org.higherState.cqrs.adapters
 import org.higherState.cqrs._
 import scala.concurrent.Future
 import scala.reflect.ClassTag
-import akka.actor.{ActorSelection, ActorRef}
+import akka.actor.{ActorSystem, ActorSelection, ActorRef}
 import akka.util.Timeout
 import org.higherState.cqrs.std.{Valid, FutureValid}
+import scala.concurrent.duration.FiniteDuration
 
 object ActorDispatcherFactory {
 
@@ -27,13 +28,19 @@ object ActorDispatcherFactory {
           .mapTo[T]
     }
 
-  def future[C <: Command, QP <: QueryParameters](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout) =
+  def future[C <: Command, QP <: QueryParameters](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout, system:ActorSystem) =
     new CQDispatcher[Future, C, QP] {
 
       def sendCommand(c: => C): Future[Unit] =
         commandHandler
           .ask(c)
           .mapTo[Unit]
+
+
+      def sendCommand(c: => C, delay: FiniteDuration): Future[Unit] =
+        akka.pattern.after(delay, system.scheduler){
+          sendCommand(c)
+        }(system.dispatcher)
 
       def executeQuery[T: ClassTag](qp: => QP): Future[T] =
         queryExecutor
@@ -41,13 +48,19 @@ object ActorDispatcherFactory {
           .mapTo[T]
     }
 
-  def future[C <: Command, QP <: QueryParameters](commandHandler:ActorSelection, queryExecutor:ActorSelection)(implicit timeout:Timeout) =
+  def future[C <: Command, QP <: QueryParameters](commandHandler:ActorSelection, queryExecutor:ActorSelection)(implicit timeout:Timeout, system:ActorSystem) =
     new CQDispatcher[Future, C, QP] {
 
       def sendCommand(c: => C): Future[Unit] =
         commandHandler
           .ask(c)
           .mapTo[Unit]
+
+      def sendCommand(c: => C, delay: FiniteDuration): Future[Unit] =
+        akka.pattern.after(delay, system.scheduler){
+          sendCommand(c)
+        }(system.dispatcher)
+
 
       def executeQuery[T: ClassTag](qp: => QP): Future[T] =
         queryExecutor
@@ -72,12 +85,17 @@ object ActorDispatcherFactory {
     }
 
 
-  def futureValid[C <: Command, QP <: QueryParameters, E](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout) =
+  def futureValid[C <: Command, QP <: QueryParameters, E](commandHandler:ActorRef, queryExecutor:ActorRef)(implicit timeout:Timeout, system:ActorSystem) =
     new CQDispatcher[({type V[+T] = FutureValid[E,T]})#V, C, QP] {
       def sendCommand(c: => C): FutureValid[E, Unit] =
         commandHandler
           .ask(c)
           .mapTo[Valid[E, Unit]]
+
+      def sendCommand(c: => C, delay: FiniteDuration): FutureValid[E, Unit] =
+        akka.pattern.after(delay, system.scheduler){
+          sendCommand(c)
+        }(system.dispatcher)
 
       def executeQuery[T: ClassTag](qp: => QP): FutureValid[E, T] =
         queryExecutor
@@ -85,12 +103,18 @@ object ActorDispatcherFactory {
           .mapTo[Valid[E, T]]
     }
 
-  def futureValid[C <: Command, QP <: QueryParameters, E](commandHandler:ActorSelection, queryExecutor:ActorSelection)(implicit timeout:Timeout) =
+  def futureValid[C <: Command, QP <: QueryParameters, E](commandHandler:ActorSelection, queryExecutor:ActorSelection)(implicit timeout:Timeout, system:ActorSystem) =
     new CQDispatcher[({type V[+T] = FutureValid[E,T]})#V, C, QP] {
       def sendCommand(c: => C): FutureValid[E, Unit] =
         commandHandler
           .ask(c)
           .mapTo[Valid[E, Unit]]
+
+      def sendCommand(c: => C, delay: FiniteDuration): FutureValid[E, Unit] =
+        akka.pattern.after(delay, system.scheduler){
+          sendCommand(c)
+        }(system.dispatcher)
+
 
       def executeQuery[T: ClassTag](qp: => QP): FutureValid[E, T] =
         queryExecutor

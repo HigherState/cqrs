@@ -1,6 +1,7 @@
 package org.higherState.cqrs
 
 import scala.reflect.ClassTag
+import scala.concurrent.duration.FiniteDuration
 
 trait Service[Out[+_]]
 
@@ -11,6 +12,8 @@ trait Dispatcher[Out[+_], M <: Message] {
 trait CQDispatcher[Out[+_], C <: Command, QP <: QueryParameters] {
 
   def sendCommand(c: => C):Out[Unit]
+
+  def sendCommand(c: => C, delay:FiniteDuration): Out[Unit]
 
   def executeQuery[T:ClassTag](qp: => QP):Out[T]
 }
@@ -29,6 +32,8 @@ object CQDispatcher {
     new CQDispatcher[Out, C, QP] {
       def sendCommand(c: => C): Out[Unit] =
         commandHandler.handle(c)
+      def sendCommand(c: => C, delay:FiniteDuration): Out[Unit] =
+        commandHandler.handle(c)
       def executeQuery[T: ClassTag](qp: => QP): Out[T] =
         queryExecutor.execute(qp).asInstanceOf[Out[T]]
     }
@@ -37,6 +42,8 @@ object CQDispatcher {
     new CQDispatcher[Out, C, Nothing] {
       def sendCommand(c: => C): Out[Unit] =
         commandHandler.handle(c)
+      def sendCommand(c: => C, delay:FiniteDuration): Out[Unit] =
+        commandHandler.handle(c)
       def executeQuery[T: ClassTag](qp: => Nothing): Out[T] = ???
     }
 
@@ -44,7 +51,7 @@ object CQDispatcher {
     new CQDispatcher[Out, Nothing, QP] {
 
       def sendCommand(c: => Nothing): Out[Unit] = ???
-
+      def sendCommand(c: => Nothing, delay:FiniteDuration): Out[Unit] = ???
       def executeQuery[T: ClassTag](qp: => QP): Out[T] =
         queryExecutor.execute(qp).asInstanceOf[Out[T]]
     }

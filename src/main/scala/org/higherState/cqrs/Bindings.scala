@@ -24,6 +24,9 @@ trait FMonadBind[E, Out[+_]] extends FMonad[E, Out] with MonadBind[Out]  {
 
   def failures(validationFailures: => NonEmptyList[E]): Out[Nothing] =
     monad.failures(validationFailures)
+
+  def onFailure[T, S >: T](value: Out[T])(f: (NonEmptyList[E]) => Out[S]): Out[S] =
+    monad.onFailure[T, S](value)(f)
 }
 
 abstract class MonadBound[Out[+_]:Monad] extends MonadBind[Out]{

@@ -27,6 +27,12 @@ trait VFMonadImplicits {
 
     def failure(validationFailure: => E): Valid[E, Nothing] =
       Failure(NonEmptyList(validationFailure))
+
+    def onFailure[T, S >: T](value: Valid[E, T])(f: (NonEmptyList[E]) => Valid[E, S]):Valid[E, S] =
+      value match {
+        case Failure(n) => f(n)
+        case e => e
+      }
   }
   implicit def futureVFMonad[E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] =
     new FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] {
@@ -45,6 +51,13 @@ trait VFMonadImplicits {
 
       def failures(validationFailures: => NonEmptyList[E]):FutureValid[E, Nothing] =
         monad.point(vfMonad.failures(validationFailures))
+
+      def onFailure[T, S >: T](value: FutureValid[E, T])(f: (NonEmptyList[E]) => FutureValid[E, S]):FutureValid[E, S] =
+        monad.bind(value) {
+          case Failure(vf) =>
+            f(vf)
+          case e => monad.point(e)
+        }
     }
 }
 trait DFMonadImplicits {
@@ -59,6 +72,12 @@ trait DFMonadImplicits {
 
     def failures(validationFailures: => NonEmptyList[E]): EitherValid[E, Nothing] =
       -\/(validationFailures)
+
+    def onFailure[T, S >: T](value: EitherValid[E, T])(f: (NonEmptyList[E]) => EitherValid[E, S]):EitherValid[E, S] =
+      value match {
+        case -\/(n) => f(n)
+        case e => e
+      }
   }
   implicit def futureDFMonad[E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = FutureEitherValid[E,T]})#V] =
     new FMonad[E, ({type V[+T] = FutureEitherValid[E,T]})#V] {
@@ -77,6 +96,13 @@ trait DFMonadImplicits {
 
       def failures(validationFailures: => NonEmptyList[E]):FutureEitherValid[E, Nothing] =
         monad.point(dfMonad.failures(validationFailures))
+
+      def onFailure[T, S >: T](value: FutureEitherValid[E, T])(f: (NonEmptyList[E]) => FutureEitherValid[E, S]):FutureEitherValid[E, S] =
+        monad.bind(value) {
+          case -\/(vf) =>
+            f(vf)
+          case e => monad.point(e)
+        }
     }
 
 }

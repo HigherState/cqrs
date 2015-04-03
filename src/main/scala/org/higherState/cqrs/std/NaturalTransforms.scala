@@ -4,7 +4,6 @@ import scalaz.~>
 import scala.concurrent.ExecutionContext
 import org.higherState.cqrs._
 
-
 trait IdentityTransforms {
 
   implicit def DirectPipe[T[_]] = new ~>[T, T] {
@@ -33,6 +32,11 @@ trait ValidTransforms {
     def apply[T](value: Valid[E, T]): FutureValid[E, T] =
       scala.concurrent.Future.successful(value)
   }
+
+  implicit def ValidReaderValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = Reader[F, Valid[E,T]]})#RV] {
+    def apply[T](value: Valid[E, T]): Reader[F,Valid[E,T]] =
+      Reader(_ => value)
+  }
 }
 
 trait FutureTransforms {
@@ -43,6 +47,19 @@ trait FutureTransforms {
       def apply[T](value: Future[T]): FutureValid[E,T] =
         value.map(scalaz.Success(_))
     }
+}
+
+trait ReaderTransforms {
+
+  implicit def ReaderReaderValid[F, E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type RV[+T] = Reader[F, Valid[E,T]]})#RV] {
+    def apply[T](fa: Reader[F, T]):Reader[F,Valid[E,T]] =
+      fa.map(scalaz.Success(_))
+  }
+
+  implicit def ReaderFutureValid[F, E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type RV[+T] = Reader[F, Valid[E,T]]})#RV] {
+    def apply[T](fa: Reader[F, T]):Reader[F,Valid[E,T]] =
+      fa.map(scalaz.Success(_))
+  }
 }
 
 object NaturalTransforms extends IdentityTransforms with ValidTransforms with FutureTransforms

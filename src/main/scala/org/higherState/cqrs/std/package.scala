@@ -17,9 +17,9 @@ package object std {
 
   type FutureValid[+E, +T] = Future[ValidationNel[E, T]]
 
-  type FutureReader[F, +T] = Future[Reader[F, T]]
+  type ReaderFuture[F, +T] = Reader[F, Future[T]]
 
-  type FutureReaderValid[F, +E, +T] = Future[ReaderValid[F, E, T]]
+  type ReaderFutureValid[F, +E, +T] = Reader[F, FutureValid[E, T]]
 
   type FutureEitherValid[+E, +T] = Future[EitherValid[E, T]]
 

@@ -44,10 +44,8 @@ class InMemoryKeyValueQueryExecutorActorImpl[Out[+_]:Monad, Key, Value]
 class InstanceTests extends FunSuite with Matchers with ScalaFutures with BeforeAndAfter {
 
   import scala.concurrent.duration._
-  import NaturalTransforms._
-  import FutureMonad._
+  import Transforms._
   import IdMonad._
-  import VFMonad._
 
   implicit val system = ActorSystem("System")
   implicit val exectionContext:ExecutionContext = system.dispatcher

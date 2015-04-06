@@ -1,58 +1,48 @@
 package org.higherState.cqrs.std
 
-import scalaz.~>
+import scalaz.{Monad, ~>}
 import scala.concurrent.ExecutionContext
 import org.higherState.cqrs._
 
-trait IdentityTransforms {
+trait IdentityTransforms extends ReaderMonads {
 
-  implicit def DirectPipe[T[_]] = new ~>[T, T] {
+  implicit def directPipe[T[_]] = new ~>[T, T] {
     def apply[A](fa: T[A]): T[A] = fa
   }
 
-  implicit def IdentityValidationPipe[E] = new ~>[Id, ({type V[+T] = Valid[E,T]})#V] {
-    def apply[A](value: Id[A]): Valid[E, A] =
-      scalaz.Success(value)
+  //scala seems unable to resolve this as an implicit
+  private def identityOutPipe[T[+_]:Monad]: ~>[Id, T] = new ~>[Id, T] {
+    def apply[A](fa: Id[A]): T[A] = implicitly[Monad[T]].point(fa)
   }
 
-  implicit val IdentityFuturePipe = new ~>[Id, scala.concurrent.Future] {
-    def apply[T](value:Id[T]): scala.concurrent.Future[T] =
-      scala.concurrent.Future.successful(value)
-  }
+  implicit def idValidPipe[E]: ~>[Id, ({type V[+T] = Valid[E,T]})#V] =
+    identityOutPipe[({type V[+T] = Valid[E,T]})#V]
 
-  implicit def IdentityReaderPipe[F] = new ~>[Id, ({type R[+T] = Reader[F,T]})#R] {
-    def apply[T](value:Id[T]) =
-      Reader(_ => value)
-  }
+  implicit def idFuturePipe(implicit ex:ExecutionContext): ~>[Id, scala.concurrent.Future] =
+    identityOutPipe[scala.concurrent.Future]
 
-  implicit def IdentityFutureValidPipe[E] = new ~>[Id, ({type V[+T] = FutureValid[E,T]})#V] {
-    def apply[T](value: Id[T]): FutureValid[E, T] =
-      scala.concurrent.Future.successful(scalaz.Success(value))
-  }
+  implicit def idReaderPipe[F]: ~>[Id, ({type R[+T] = Reader[F,T]})#R] =
+    identityOutPipe[({type R[+T] = Reader[F,T]})#R]
 
-  implicit def IdentityReaderValidPipe[F, E] =  new ~>[Id, ({type RV[+T] = Reader[F, Valid[E,T]]})#RV] {
-     def apply[T](value:Id[T]):Reader[F, Valid[E, T]] =
-       Reader(_ => scalaz.Success(value))
-  }
+  implicit def idFutureValidPipe[E](implicit ex:ExecutionContext): ~>[Id, ({type FV[+T] = FutureValid[E,T]})#FV] =
+    identityOutPipe[({type V[+T] = FutureValid[E,T]})#V]
 
-  implicit def IdentityFutureReaderPipe[F] = new ~> [Id,({type FR[+T] = FutureReader[F, T]})#FR] {
-    def apply[T](value: Id[T]): FutureReader[F, T] =
-      scala.concurrent.Future.successful(Reader(_ => value))
-  }
+  implicit def idReaderValidPipe[F,E]: ~>[Id, ({type RV[+T] = ReaderValid[F, E,T]})#RV] =
+    identityOutPipe[({type RV[+T] = ReaderValid[F, E,T]})#RV]
 
-  implicit def IdentityFutureReaderValidPipe[F, E] = new ~>[Id, ({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV]  {
-    def apply[T](value: Id[T]):FutureReaderValid[F, E, T] =
-      scala.concurrent.Future.successful(Reader(_ => scalaz.Success(value)))
+  implicit def idReaderFuturePipe[F](implicit ex:ExecutionContext): ~>[Id,({type FR[+T] = ReaderFuture[F, T]})#FR] =
+    identityOutPipe[({type FR[+T] = ReaderFuture[F, T]})#FR]
 
-  }
+  implicit def idReaderFutureValidPipe[F,E](implicit ex:ExecutionContext): ~>[Id, ({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] =
+    identityOutPipe[({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV]
 
 }
 
 trait ValidTransforms {
 
-  implicit def ValidationFutureValidPipe[E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,  ({type V[+T] = FutureValid[E,T]})#V] {
+  implicit def ValidFutureValidPipe[E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,  ({type V[+T] = FutureValid[E,T]})#V] {
     def apply[T](value: Valid[E, T]): FutureValid[E, T] =
-      scala.concurrent.Future.successful(value)
+      FutureLift(value)
   }
 
   implicit def ValidReaderValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = ReaderValid[F, E,T]})#RV] {
@@ -60,9 +50,9 @@ trait ValidTransforms {
       Reader(_ => value)
   }
 
-  implicit def ValidFutureReaderValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = FutureReaderValid[F, E,T]})#RV] {
-    def apply[T](value: Valid[E, T]): FutureReaderValid[F, E, T] =
-      scala.concurrent.Future.successful(Reader(_ => value))
+  implicit def ValidReaderFutureValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = ReaderFutureValid[F, E,T]})#RV] {
+    def apply[T](value: Valid[E, T]): ReaderFutureValid[F, E, T] =
+      Reader(_ => FutureLift(value))
   }
 
 }
@@ -70,66 +60,60 @@ trait ValidTransforms {
 trait FutureTransforms {
   import scala.concurrent.Future
 
-//  implicit def FuturePipe[E, Out[+_]](implicit ec:ExecutionContext, pipe: ~>[Id, Out]) =
-//    new ~>[Future, ({type F[+T] = Future[Out[T]]})#F] {
-//      def apply[T](value:Future[T]):Future[Out[T]] =
-//        value.map(t => pipe(t))
-//    }
-
-
-  implicit def FutureFutureValidationPipe[E](implicit ec:ExecutionContext) =
+  implicit def FutureFutureValidPipe[E](implicit ec:ExecutionContext) =
     new ~>[Future, ({type V[+T] = FutureValid[E,T]})#V] {
       def apply[T](value: Future[T]): FutureValid[E,T] =
         value.map(scalaz.Success(_))
     }
 
-  implicit def FutureFutureReaderPipe[F](implicit ec:ExecutionContext) =
-    new ~>[Future, ({type FR[+T] = FutureReader[F,T]})#FR] {
-      def apply[T](value: Future[T]): FutureReader[F,T] =
-        value.map(v => Reader(_ => v))
+  implicit def FutureReaderFuturePipe[F](implicit ec:ExecutionContext) =
+    new ~>[Future, ({type RF[+T] = ReaderFuture[F,T]})#RF] {
+      def apply[T](value: Future[T]): ReaderFuture[F,T] =
+        Reader(_ => value)
     }
 
   implicit def FutureFutureReaderValidPipe[F, E](implicit ec:ExecutionContext) =
-    new ~>[Future,  ({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV] {
-      def apply[T](value:Future[T]):FutureReaderValid[F, E, T] =
-        value.map(t => Reader(_ => scalaz.Success(t)))
+    new ~>[Future,  ({type RFV[+T] = ReaderFutureValid[F, E, T]})#RFV] {
+      def apply[T](value:Future[T]):ReaderFutureValid[F, E, T] =
+        Reader(_ => value.map(scalaz.Success(_)))
     }
 
-  implicit def FutureValidFutureReaderValid[F, E](implicit ec:ExecutionContext) =
-    new ~>[({type V[+T] = FutureValid[E,T]})#V,  ({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV] {
-      def apply[T](value:FutureValid[E, T]):FutureReaderValid[F, E, T] =
-        value.map(t => Reader(_ => t))
+  implicit def FutureValidReaderFutureValid[F, E](implicit ec:ExecutionContext) =
+    new ~>[({type V[+T] = FutureValid[E,T]})#V,  ({type RFV[+T] = ReaderFutureValid[F, E, T]})#RFV] {
+      def apply[T](value:FutureValid[E, T]):ReaderFutureValid[F, E, T] =
+        Reader(_ => value)
     }
 
-  implicit def FutureReaderFutureReaderValid[F, E] (implicit ec:ExecutionContext) =
-    new ~>[({type FR[+T] = FutureReader[F,T]})#FR, ({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV] {
-      def apply[T](value:FutureReader[F, T]):FutureReaderValid[F, E, T] =
-        value.map(_.map(scalaz.Success(_)))
-    }
+
 }
 
 trait ReaderTransforms {
-  import scala.concurrent.Future
 
   implicit def ReaderReaderValid[F, E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type RV[+T] = ReaderValid[F, E,T]})#RV] {
     def apply[T](value: Reader[F, T]):Reader[F,Valid[E,T]] =
       value.map(scalaz.Success(_))
   }
 
-  implicit def ReaderFutureReader[F] = new ~>[({type R[+T] = Reader[F,T]})#R,({type FR[+T] = FutureReader[F, T]})#FR] {
-    def apply[T](value: Reader[F, T]):Future[Reader[F,T]] =
-      scala.concurrent.Future.successful(value)
+  implicit def ReaderReaderFuture[F] = new ~>[({type R[+T] = Reader[F,T]})#R,({type RF[+T] = ReaderFuture[F, T]})#RF] {
+    def apply[T](value: Reader[F, T]):ReaderFuture[F,T] =
+      value.map(FutureLift(_))
   }
 
-  implicit def ReaderFutureReaderValid[F,E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV] {
-    def apply[T](value: Reader[F, T]):FutureReaderValid[F,E, T] =
-      scala.concurrent.Future.successful(value.map(scalaz.Success(_)))
+  implicit def ReaderReaderFutureValid[F,E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] {
+    def apply[T](value: Reader[F, T]):ReaderFutureValid[F,E,T] =
+      value.map(t => FutureLift(scalaz.Success(t)))
   }
 
-  implicit def ReaderValidFutureReaderValid[F,E] = new ~>[({type RV[+T] = ReaderValid[F, E,T]})#RV, ({type FRV[+T] = FutureReaderValid[F, E, T]})#FRV] {
-    def apply[T](value: ReaderValid[F, E, T]):FutureReaderValid[F, E, T] =
-      scala.concurrent.Future.successful(value)
+  implicit def ReaderValidReaderFutureValid[F,E] = new ~>[({type RV[+T] = ReaderValid[F, E,T]})#RV, ({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] {
+    def apply[T](value: ReaderValid[F, E, T]):ReaderFutureValid[F, E, T] =
+      value.map(FutureLift(_))
   }
+
+  implicit def ReaderFutureFutureReaderValid[F, E] (implicit ec:ExecutionContext) =
+    new ~>[({type FR[+T] = ReaderFuture[F,T]})#FR, ({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] {
+      def apply[T](value:ReaderFuture[F, T]):ReaderFutureValid[F, E, T] =
+        value.map(_.map(scalaz.Success(_)))
+    }
 }
 
-object NaturalTransforms extends IdentityTransforms with ValidTransforms with FutureTransforms with ReaderTransforms
+object Transforms extends IdentityTransforms with ValidTransforms with FutureTransforms with ReaderTransforms

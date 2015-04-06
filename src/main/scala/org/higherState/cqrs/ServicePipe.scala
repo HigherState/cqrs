@@ -4,6 +4,6 @@ import scalaz.~>
 
 object ServicePipe {
 
-  implicit def impl[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
+  implicit def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
     = nt.apply(value)
 }

@@ -34,6 +34,17 @@ trait VFMonadImplicits {
         case e => e
       }
   }
+  implicit def readerVFMonad[F,E] = new FMonad[E, ({type RV[+T] = ReaderValid[F,E,T]})#RV] {
+
+    def bind[A,B](fa:ReaderValid[F,E,A])(f: (A) => ReaderValid[F,E,B]):ReaderValid[F,E,B] =
+     fa.flatMap{
+       case Failure(vf) =>
+         org.higherState.cqrs.Reader(_ => vfMonad.failures(vf))
+       case Success(s) =>
+         f(s)
+     }
+
+  }
   implicit def futureVFMonad[E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] =
     new FMonad[E, ({type V[+T] = FutureValid[E,T]})#V] {
       def bind[A, B](fa: FutureValid[E, A])(f: (A) => FutureValid[E, B]): FutureValid[E, B] =
@@ -59,6 +70,38 @@ trait VFMonadImplicits {
           case e => monad.point(e)
         }
     }
+  type R = org.higherState.cqrs.Reader
+  implicit def readerFutureVFMonad[F,E](implicit monad:Monad[Future]):FMonad[E, ({type V[+T] = org.higherState.cqrs.Reader[F, Future[Valid[E, T]]]})#V] = {
+    new FMonad[E, ({type V[+T] = org.higherState.cqrs.Reader[F, Future[Valid[E,T]]]})#V]{
+      def bind[A, B](fa:org.higherState.cqrs.Reader[F, Future[Valid[E,A]]])(f: (A) => org.higherState.cqrs.Reader[F, Future[Valid[E,B]]]):org.higherState.cqrs.Reader[F, Future[Valid[E,B]]] =
+        fa.flatMap{ft =>
+          org.higherState.cqrs.Reader{t =>
+            monad.bind(ft){
+              case Failure(vf) =>
+                monad.point(vfMonad.failures(vf))
+              case Success(s) =>
+                f(s).apply(t)
+            }
+          }
+        }
+
+      def point[A](a: => A): FutureReaderValid[F, E, A] =
+        monad.point(org.higherState.cqrs.Reader(_ => vfMonad.point(a)))
+
+      def failure(validationFailure: => E): FutureReaderValid[F, E, Nothing] =
+        monad.point(org.higherState.cqrs.Reader(_ => vfMonad.failure(validationFailure)))
+
+      def failures(validationFailures: => NonEmptyList[E]):FutureReaderValid[F, E, Nothing] =
+        monad.point(org.higherState.cqrs.Reader(_ => vfMonad.failures(validationFailures)))
+
+      def onFailure[T, S >: T](value: FutureValid[E, T])(f: (NonEmptyList[E]) => FutureValid[E, S]):FutureValid[E, S] =
+        monad.bind(value) {
+          case Failure(vf) =>
+            f(vf)
+          case e => monad.point(e)
+        }
+    }
+  }
 }
 trait DFMonadImplicits {
   implicit def dfMonad[E] = new FMonad[E, ({type V[+T] = EitherValid[E,T]})#V] {

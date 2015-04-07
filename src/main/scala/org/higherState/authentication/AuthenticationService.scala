@@ -1,31 +1,31 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{Service, CQDispatcher}
+import org.higherState.cqrs.{CommandQueryController, Service}
 
-class AuthenticationService[Out[+_]](dispatcher:CQDispatcher[Out, AuthenticationCommand, AuthenticationQueryParameters]) extends Service[Out] {
+class AuthenticationService[Out[+_]](controller:CommandQueryController[Out, AuthenticationCommand, AuthenticationQueryParameters]) extends Service[Out] {
 
   def createNewUser(userLogin:UserLogin, password:Password) =
-    dispatcher.sendCommand(CreateNewUser(userLogin, password))
+    controller.sendCommand(CreateNewUser(userLogin, password))
 
   def deleteUser(userLogin:UserLogin) =
-    dispatcher.sendCommand(DeleteUser(userLogin))
+    controller.sendCommand(DeleteUser(userLogin))
 
   def incrementFailureCount(userLogin:UserLogin) =
-    dispatcher.sendCommand(IncrementFailureCount(userLogin))
+    controller.sendCommand(IncrementFailureCount(userLogin))
 
   def resetFailureCount(userLogin:UserLogin) =
-    dispatcher.sendCommand(ResetFailureCount(userLogin))
+    controller.sendCommand(ResetFailureCount(userLogin))
 
   def setLock(userLogin:UserLogin, lock:Boolean) =
-    dispatcher.sendCommand(SetLock(userLogin, lock))
+    controller.sendCommand(SetLock(userLogin, lock))
 
   def updatePasswordWithCurrentPassword(userLogin:UserLogin, currentPassword:Password, newPassword:Password) =
-    dispatcher.sendCommand(UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword))
+    controller.sendCommand(UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword))
 
   def authenticate(userLogin:UserLogin, password:Password):Out[UserLogin] =
-    dispatcher.executeQuery[UserLogin](Authenticate(userLogin, password))
+    controller.executeQuery[UserLogin](Authenticate(userLogin, password))
 
   def getLockedUserLogins =
-    dispatcher.executeQuery[TraversableOnce[(UserLogin, Int)]](GetLockedUserLogins)
+    controller.executeQuery[TraversableOnce[(UserLogin, Int)]](GetLockedUserLogins)
 
 }

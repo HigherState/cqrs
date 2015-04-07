@@ -1,12 +1,13 @@
-package org.higherState.cqrs.adapters
+package org.higherState.cqrs
 
 import scala.concurrent.Future
-import org.higherState.cqrs._
 import akka.pattern.PipeableFuture
 
 trait ActorAdapter extends akka.actor.Actor {
 
   def receive = handler
+
+  //def applicator(implicit readerApplicator:ReaderApplicator)
 
   val handler = this match {
     case cq: CommandHandler[_, Command@unchecked] with QueryExecutor[_, QueryParameters@unchecked] =>

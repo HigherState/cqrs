@@ -19,25 +19,25 @@ trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
   def -= (key:Key):Out[Unit]
 }
 
-class KeyValueCqrsRepository[Out[+_], Key, Value](dispatcher:CQDispatcher[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
+class KeyValueCqrsRepository[Out[+_], Key, Value](controller:CommandQueryController[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
 
   def contains(key:Key):Out[Boolean] =
-    dispatcher.executeQuery[Boolean](Contains(key))
+    controller.executeQuery[Boolean](Contains(key))
 
   def get(key:Key):Out[Option[Value]] =
-    dispatcher.executeQuery[Option[Value]](Get(key))
+    controller.executeQuery[Option[Value]](Get(key))
 
   def iterator:Out[TraversableOnce[(Key, Value)]] =
-    dispatcher.executeQuery[TraversableOnce[(Key, Value)]](Iterator())
+    controller.executeQuery[TraversableOnce[(Key, Value)]](Iterator())
 
   def values:Out[TraversableOnce[Value]] =
-    dispatcher.executeQuery[TraversableOnce[Value]](Values())
+    controller.executeQuery[TraversableOnce[Value]](Values())
 
   def += (kv:(Key, Value)):Out[Unit] =
-    dispatcher.sendCommand(Add(kv))
+    controller.sendCommand(Add(kv))
 
   def -= (key:Key):Out[Unit] =
-    dispatcher.sendCommand(Remove(key))
+    controller.sendCommand(Remove(key))
 }
 
 // simple repository for testing

@@ -1,17 +1,18 @@
-package org.higherState.authentication
+package org.higherState.cqrs
 
-import org.scalatest.{BeforeAndAfter, Matchers, FunSuite}
-import org.scalatest.concurrent.ScalaFutures
-import scalaz.{Success, ~>}
 import org.higherState.cqrs.std._
-import scala.language.higherKinds
-import org.higherState.cqrs.{ServicePipe, MonadBound}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+
 import scala.concurrent.Future
+import scala.language.higherKinds
+import scalaz.{Success, ~>}
 
 class NaturalTransformsTests extends FunSuite with Matchers with ScalaFutures with BeforeAndAfter {
 
+  import Transforms._
+
   test("get implicits") {
-    import org.higherState.cqrs.std.Transforms._
 
     type V[+T] = Valid[String, T]
     implicitly[~>[Id, V]].apply(3) should equal (Success(3))
@@ -19,7 +20,6 @@ class NaturalTransformsTests extends FunSuite with Matchers with ScalaFutures wi
 
   test("Futures") {
     import scala.concurrent.ExecutionContext.Implicits.global
-    import Transforms._
 
     class Threading() {
       def call():Id[Unit] = {
@@ -32,7 +32,6 @@ class NaturalTransformsTests extends FunSuite with Matchers with ScalaFutures wi
       val t = new Threading
       implicit val pipe = Transforms.idFuturePipe
       val m = Future.successful(123)
-      import ServicePipe._
       def call:Future[Unit] = {
         println(Thread.currentThread().getId)
 

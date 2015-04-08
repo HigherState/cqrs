@@ -4,9 +4,8 @@ import java.util.concurrent.atomic.AtomicReference
 import org.higherState.cqrs._
 import scalaz.Monad
 
-abstract class InMemoryKeyValueCommandHandler[Out[+_]:Monad, Key, Value] extends MonadBound[Out] with CommandHandler[Out, KeyValueCommand[Key,Value]] {
-
-  protected def state:AtomicReference[Map[Key, Value]]
+abstract class InMemoryKeyValueCommandHandler[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
+  extends MonadBound[Out] with CommandHandler[Out, KeyValueCommand[Key,Value]] {
 
   def handle = {
     case Add(kv) =>

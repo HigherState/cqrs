@@ -29,7 +29,10 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
 
 
 
-  class MyServiceAggregator[Out[+_], In[+_]](myService:MyService[In])(implicit val pipe: ~>[In, Out]) {
+
+  //Service aggregator to pipe through the Monadic service
+  class MyServiceAggregator[Out[+_], In[+_]](myService:MyService[In])
+                                            (implicit val pipe: ~>[In, Out]) {
 
     def callDoSomething:Out[String] =
       pipe(myService.doSomething)
@@ -47,7 +50,8 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
 
 
 
-  class ExtendedServiceAggregator[Out[+_], In[+_]](myService:MyService[In])(implicit val monad:Monad[Out], val pipe: ~>[In, Out]) {
+  class ExtendedServiceAggregator[Out[+_], In[+_]](myService:MyService[In])
+                                                  (implicit val monad:Monad[Out], val pipe: ~>[In, Out]) {
 
     def extendedSomething:Out[String] =
       monad.map(pipe(myService.doSomething)) { s =>
@@ -76,7 +80,8 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
   }
 
 
-  class MultiplePipes[Out[+_], In[+_]](myService:MyService[In], failableService:MyFailableService)(implicit val monad:Monad[Out], val pipe1: ~>[In, Out], val pipe2: ~>[Valid, Out]) {
+  class MultiplePipes[Out[+_], In[+_]](myService:MyService[In], failableService:MyFailableService)
+                                      (implicit val monad:Monad[Out], val pipe1: ~>[In, Out], val pipe2: ~>[Valid, Out]) {
 
     def completeSucceed:Out[String] = {
       monad.bind(pipe1(myService.doSomething)) { s =>

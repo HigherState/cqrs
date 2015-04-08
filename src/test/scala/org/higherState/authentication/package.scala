@@ -2,7 +2,11 @@ package org.higherState
 
 import java.util.UUID
 
+import org.higherState.cqrs.FMonad
+
 package object authentication {
+
+  type VMonad[Out[+_]] = FMonad[ValidationFailure, Out]
 
   /* illustrative only, passwords not hashed*/
   case class Password(value:String) extends AnyVal {

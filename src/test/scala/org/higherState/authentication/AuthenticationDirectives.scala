@@ -1,15 +1,14 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{FMonad, ServicePipe}
+import org.higherState.cqrs._
 import org.higherState.repository.KeyValueRepository
-import scalaz.~>
 
-trait AuthenticationDirectives[In[+_], Out[+_]] extends FMonad[ValidationFailure, Out] {
+abstract class AuthenticationDirectives[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
+  (repository:KeyValueRepository[In, UserLogin, UserCredentials])
+  extends VMonadBound[Out] {
 
   import ServicePipe._
 
-  implicit protected def pipe: ~>[In, Out]
-  protected def repository:KeyValueRepository[In, UserLogin, UserCredentials]
 
   protected def withValidUniqueLogin[T](userLogin:UserLogin)(f: => Out[T]):Out[T] =
     bind(repository.get(userLogin)) {

@@ -1,12 +1,13 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ ServicePipe, CommandHandler}
+import org.higherState.cqrs._
+import org.higherState.repository.KeyValueRepository
 
-trait AuthenticationCommandHandler[In[+_], Out[+_]] extends CommandHandler[Out, AuthenticationCommand] with AuthenticationDirectives[In, Out] {
+class AuthenticationCommandHandler[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
+  (repository:KeyValueRepository[In, UserLogin, UserCredentials], maxNumberOfTries:Int)
+  extends AuthenticationDirectives[Out, In](repository) with CommandHandler[Out, AuthenticationCommand]{
 
   import ServicePipe._
-
-  protected def maxNumberOfTries:Int
 
   def handle = {
     case CreateNewUser(userLogin, password) =>

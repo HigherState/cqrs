@@ -1,8 +1,11 @@
 package org.higherState.authentication
 
-import org.higherState.cqrs.{ServicePipe, QueryExecutor}
+import org.higherState.cqrs._
+import org.higherState.repository.KeyValueRepository
 
-trait AuthenticationQueryExecutor[In[+_], Out[+_]] extends QueryExecutor[Out, AuthenticationQueryParameters] with AuthenticationDirectives[In, Out] {
+class AuthenticationQueryExecutor[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
+  (repository:KeyValueRepository[In, UserLogin, UserCredentials])
+  extends AuthenticationDirectives[Out, In](repository) with QueryExecutor[Out, AuthenticationQueryParameters] {
 
   import ServicePipe._
 

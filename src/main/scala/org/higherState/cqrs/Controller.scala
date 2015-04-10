@@ -11,7 +11,6 @@ trait MessageController[Out[+_], M <: Message] {
 
 trait CommandController[Out[+_], C <: Command] {
   def sendCommand(c: => C):Out[Unit]
-  def sendCommand(c: => C, delay:FiniteDuration): Out[Unit]
 }
 
 trait QueryController[Out[+_], QP <: QueryParameters] {
@@ -57,14 +56,10 @@ object CommandController {
     new CommandController[Out, C] {
       def sendCommand(c: => C): Out[Unit] =
         commandHandler.handle(c)
-      def sendCommand(c: => C, delay:FiniteDuration): Out[Unit] =
-        commandHandler.handle(c)
     }
   def reader[F, Out[+_], C <: Command](commandHandler:CommandHandler[({type R[+T] = Reader[F, Out[T]]})#R, C])(implicit applicator:ReaderApplicator[F]) =
     new CommandController[Out, C] {
       def sendCommand(c: => C): Out[Unit] =
-        applicator(commandHandler.handle(c))
-      def sendCommand(c: => C, delay:FiniteDuration): Out[Unit] =
         applicator(commandHandler.handle(c))
     }
   def actor[Out[+_]] = new {
@@ -73,11 +68,6 @@ object CommandController {
         def sendCommand(c: => C): Future[Out[Unit]] =
           commandHandler
             .ask(c).asInstanceOf[Future[Out[Unit]]]
-
-        def sendCommand(c: => C, delay: FiniteDuration): Future[Out[Unit]] =
-          akka.pattern.after(delay, system.scheduler) {
-            sendCommand(c)
-          }(system.dispatcher)
       }
 
     def apply[C <: Command](commandHandler: ActorSelection)(implicit timeout: Timeout, system: ActorSystem) =
@@ -85,11 +75,6 @@ object CommandController {
         def sendCommand(c: => C): Future[Out[Unit]] =
           commandHandler
             .ask(c).asInstanceOf[Future[Out[Unit]]]
-
-        def sendCommand(c: => C, delay: FiniteDuration): Future[Out[Unit]] =
-          akka.pattern.after(delay, system.scheduler) {
-            sendCommand(c)
-          }(system.dispatcher)
       }
   }
 }
@@ -130,8 +115,6 @@ object CommandQueryController {
     new CommandQueryController[Out, C, QP] {
       def sendCommand(c: => C): Out[Unit] =
         commandHandler.handle(c)
-      def sendCommand(c: => C, delay:FiniteDuration): Out[Unit] =
-        commandHandler.handle(c)
       def executeQuery[T](qp: => QP): Out[T] =
         queryExecutor.execute(qp).asInstanceOf[Out[T]]
     }
@@ -143,10 +126,6 @@ object CommandQueryController {
     new CommandQueryController[Out, C, QP] {
       def sendCommand(c: => C): Out[Unit] =
         applicator(commandHandler.handle(c))
-
-      def sendCommand(c: => C, delay: FiniteDuration): Out[Unit] =
-        applicator(commandHandler.handle(c))
-
       def executeQuery[T](qp: => QP): Out[T] =
         applicator(queryExecutor.execute(qp)).asInstanceOf[Out[T]]
     }
@@ -159,10 +138,6 @@ object CommandQueryController {
           commandHandler
             .ask(c).asInstanceOf[Future[Out[Unit]]]
 
-        def sendCommand(c: => C, delay: FiniteDuration): Future[Out[Unit]] =
-          akka.pattern.after(delay, system.scheduler) {
-            sendCommand(c)
-          }(system.dispatcher)
 
         def executeQuery[T](qp: => QP): Future[Out[T]] =
           queryExecutor
@@ -174,11 +149,6 @@ object CommandQueryController {
         def sendCommand(c: => C): Future[Out[Unit]] =
           commandHandler
             .ask(c).asInstanceOf[Future[Out[Unit]]]
-
-        def sendCommand(c: => C, delay: FiniteDuration): Future[Out[Unit]] =
-          akka.pattern.after(delay, system.scheduler) {
-            sendCommand(c)
-          }(system.dispatcher)
 
         def executeQuery[T](qp: => QP): Future[Out[T]] =
           queryExecutor

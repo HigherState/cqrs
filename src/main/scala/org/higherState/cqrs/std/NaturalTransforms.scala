@@ -94,15 +94,6 @@ trait ReaderTransforms {
       value.map(scalaz.Success(_))
   }
 
-  implicit def ReaderReaderFuture[F] = new ~>[({type R[+T] = Reader[F,T]})#R,({type RF[+T] = ReaderFuture[F, T]})#RF] {
-    def apply[T](value: Reader[F, T]):ReaderFuture[F,T] =
-      value.map(FutureLift(_))
-  }
-
-  implicit def ReaderReaderFutureValid[F,E] = new ~>[({type R[+T] = Reader[F,T]})#R,({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] {
-    def apply[T](value: Reader[F, T]):ReaderFutureValid[F,E,T] =
-      value.map(t => FutureLift(scalaz.Success(t)))
-  }
 
   implicit def ReaderValidReaderFutureValid[F,E] = new ~>[({type RV[+T] = ReaderValid[F, E,T]})#RV, ({type FRV[+T] = ReaderFutureValid[F, E, T]})#FRV] {
     def apply[T](value: ReaderValid[F, E, T]):ReaderFutureValid[F, E, T] =

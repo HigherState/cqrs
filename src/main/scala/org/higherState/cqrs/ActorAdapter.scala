@@ -20,17 +20,17 @@ trait ActorAdapter extends akka.actor.Actor {
       sendMessage(m).andThen(pipeSender)
   }
 
-  private def handleCommand[Out[+_]](ch: CommandHandler[Out, Command]): PartialFunction[Any, Any] = {
+  protected def handleCommand[Out[+_]](ch: CommandHandler[Out, Command]): PartialFunction[Any, Any] = {
     case c: Command =>
       ch.handle(c)
   }
 
-  private def executeQuery[Out[+_]](qe: QueryExecutor[Out, QueryParameters]): PartialFunction[Any, Any] = {
+  protected def executeQuery[Out[+_]](qe: QueryExecutor[Out, QueryParameters]): PartialFunction[Any, Any] = {
     case qp: QueryParameters =>
       qe.execute(qp)
   }
 
-  private def sendMessage[Out[+_]](mr: MessageReceiver[Out, Message]): PartialFunction[Any, Any] = {
+  protected def sendMessage[Out[+_]](mr: MessageReceiver[Out, Message]): PartialFunction[Any, Any] = {
     case m:Message =>
       mr.handle(m)
   }

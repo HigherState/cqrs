@@ -1,6 +1,6 @@
 package org.higherState.cqrs
 
-trait Command extends Message
+trait Command
 
 trait CommandHandler[Out[+_], C <: Command] {
 

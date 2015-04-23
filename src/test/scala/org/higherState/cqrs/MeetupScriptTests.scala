@@ -126,7 +126,7 @@ class SourceService[Out[+_]:scalaz.Monad] extends MonadBound[Out] {
   def doSomething:Out[String] =
     point("Result")
 }
-
+import Scalaz._
 class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_]:(~>![Out])#I]
   (myService:SourceService[In1], myService2:SourceService[In2]) {
 
@@ -135,12 +135,13 @@ class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_
   def runBind:Out[String] = {
     for {
       s <- myService.doSomething
+      s1 = ","
       s2 <- myService2.doSomething
-    } yield s + "," + s2
+    } yield s + s1 + s2
   }
 
-//  def runSingle:Out[String] =
-//    ~> myService2.doSomething
+  def runSingle:Out[String] =
+    myService2.doSomething.map(s => s + ".")
 
 //  def runSequence(c:Int):Out[String] = {
 //    val seq = sequence((0 to c).toList.map(_ => ~>(myService.doSomething)))

@@ -2,12 +2,13 @@ package org.higherState.cqrs
 
 import org.scalatest.{BeforeAndAfter, Matchers, FunSuite}
 import org.scalatest.concurrent.ScalaFutures
-import scalaz._
 import org.higherState.cqrs.std.{Id, Transforms}
 import scala.concurrent.Future
+import org.higherState.cqrs
 
 class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with BeforeAndAfter {
   import Transforms._
+  import scalaz._
 
   //Define a Monadic service
   class MyService[Out[+_]](implicit val monad:Monad[Out]) {
@@ -62,7 +63,7 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
   test ("Myservice extender") {
     new ExtendedServiceAggregator[Valid, Id](new MyService[Id]).extendedSomething should equal (Success("Something done completely"))
 
-    type R[+T] = Reader[String, T]
+    type R[+T] = cqrs.Reader[String, T]
     type RValid[+T] = R[Valid[T]]
     new ExtendedServiceAggregator[RValid, R](new MyService[R]).extendedSomething.apply("Not used") should equal (Success("Something done completely"))
   }
@@ -116,37 +117,35 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
 
     val s = new SimplifiedMultiplePipes[FutureValid, Valid, Future](new SourceService[Valid], new SourceService[Future])
     whenReady(s.runBind){_ should equal (Success("Result,Result"))}
-    whenReady(s.runSequence(3)){_ should equal (Success("Result,Result,Result,Result"))}
+    //whenReady(s.runSequence(3)){_ should equal (Success("Result,Result,Result,Result"))}
   }
 
 }
 
-class SourceService[Out[+_]:Monad] extends MonadBound[Out] {
+class SourceService[Out[+_]:scalaz.Monad] extends MonadBound[Out] {
   def doSomething:Out[String] =
     point("Result")
 }
 
-class SimplifiedMultiplePipes[Out[+_]:Monad, In1[+_]:(~>![Out])#I, In2[+_]:(~>![Out])#I]
-  (myService:SourceService[In1], myService2:SourceService[In2]) extends MonadBound[Out] {
+class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_]:(~>![Out])#I]
+  (myService:SourceService[In1], myService2:SourceService[In2]) {
 
-  import Scalaz._
-  import ServicePipe._
+  import Monad._
 
   def runBind:Out[String] = {
-    bind(myService.doSomething) { s =>
-      map(myService2.doSomething) { s2 =>
-        s2 + "," + s
-      }
-    }
+    for {
+      s <- myService.doSomething
+      s2 <- myService2.doSomething
+    } yield s + "," + s2
   }
 
-  def runSingle:Out[String] =
-    myService2.doSomething
+//  def runSingle:Out[String] =
+//    ~> myService2.doSomething
 
-  def runSequence(c:Int):Out[String] = {
-    val seq = sequence((0 to c).toList.map(_ => ~>(myService.doSomething)))
-    map(seq) { s =>
-      s.mkString(",")
-    }
-  }
+//  def runSequence(c:Int):Out[String] = {
+//    val seq = sequence((0 to c).toList.map(_ => ~>(myService.doSomething)))
+//    map(seq) { s =>
+//      s.mkString(",")
+//    }
+//  }
 }

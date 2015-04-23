@@ -1,19 +1,23 @@
 package org.higherState.cqrs
 
-import scalaz.{NonEmptyList, ~>}
-import scalaz.syntax.{Ops, ToMonadOps}
+import scalaz._
 
 object ServicePipe {
   implicit def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
   = nt.apply(value)
 }
 
-object Monad extends ToMonadOps {
-  def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
-     = nt.apply(value)
+object Monad {
+
+  implicit class PipeMonad[Out[+_], In[+_], A](in: In[A])(implicit monad: Monad[Out], pipe:In ~> Out) {
+    def flatMap[T](f:A => Out[T]):Out[T] =
+      monad.bind(pipe(in))(f)
+    def map[T](f:A => T):Out[T] =
+      monad.map(pipe(in))(f)
+  }
 }
 
-trait FMonad[E, Out[+_]] extends scalaz.Monad[Out] {
+trait FMonad[E, Out[+_]] extends Monad[Out] {
 
   def failure(validationFailure: => E):Out[Nothing]
 
@@ -22,9 +26,10 @@ trait FMonad[E, Out[+_]] extends scalaz.Monad[Out] {
   def onFailure[T, S >: T](value:Out[T])(f:NonEmptyList[E] => Out[S]):Out[S]
 }
 
-object FMonad extends ToMonadOps {
+object FMonad {
   def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
     = nt.apply(value)
+
 
   def failure[E, Out[+_]](validationFailure: => E)(implicit fmonad:FMonad[E, Out]):Out[Nothing] =
     fmonad.failures(NonEmptyList(validationFailure))
@@ -32,10 +37,11 @@ object FMonad extends ToMonadOps {
   def failures[E, Out[+_]](validationFailures: => NonEmptyList[E])(implicit fmonad:FMonad[E, Out]):Out[Nothing] =
     fmonad.failures(validationFailures)
 
-}
+  implicit class PipeMonad[Out[+_], In[+_], A](in: In[A])(implicit monad: Monad[Out], pipe:In ~> Out) {
+    def flatMap[T](f:A => Out[T]):Out[T] =
+      monad.bind(pipe(in))(f)
+    def map[T](f:A => T):Out[T] =
+      monad.map(pipe(in))(f)
+  }
 
-final class FMonadOps[E, Out[+_] ,T] private[cqrs](val self: Out[T])(implicit val F: FMonad[E, Out]) extends Ops[Out[T]] {
-  def onFailure[S >: T](f:NonEmptyList[E] => Out[S]):Out[S] =
-    F.onFailure[T,S](self)(f)
 }
-

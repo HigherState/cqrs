@@ -50,6 +50,10 @@ trait PipeFMonad {
     def onFailure[T >: A](f:NonEmptyList[E] => Out[T]):Out[T] =
       monad.onFailure[A, T](pipe(in))(f)
   }
+  implicit class FailureMonad[Out[+_], E, A](out:Out[A])(implicit monad: FMonad[E, Out]) {
+    def onFailure[T >: A](f:NonEmptyList[E] => Out[T]):Out[T] =
+      monad.onFailure[A, T](out)(f)
+  }
 }
 
 trait FMonadOps extends MonadOps {

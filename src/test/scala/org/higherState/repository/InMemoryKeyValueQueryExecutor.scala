@@ -1,6 +1,7 @@
 package org.higherState.repository
 
 import org.higherState.cqrs.{MonadBound, QueryExecutor}
+import org.higherState.cqrs
 import java.util.concurrent.atomic.AtomicReference
 import scalaz.Monad
 
@@ -20,4 +21,5 @@ abstract class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value](state:At
     case Values() =>
       point(state.get().valuesIterator)
   }
+
 }

@@ -1,6 +1,6 @@
 package org.higherState.cqrs.std
 
-import scalaz.{Monad, ~>}
+import scalaz.~>
 import scala.concurrent.ExecutionContext
 import org.higherState.cqrs._
 

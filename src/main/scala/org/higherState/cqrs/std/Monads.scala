@@ -2,11 +2,10 @@ package org.higherState.cqrs.std
 
 import scala.concurrent.{CanAwait, ExecutionContext, Future}
 import org.higherState.cqrs._
-import scalaz._
 import org.higherState.cqrs.Reader
 import scala.util.Try
-import scala.concurrent.impl.Promise
 import scala.concurrent.duration.Duration
+import scalaz.{Success, NonEmptyList, Failure, \/-, -\/}
 
 object IdMonad {
   implicit val idMonad = scalaz.Id.id

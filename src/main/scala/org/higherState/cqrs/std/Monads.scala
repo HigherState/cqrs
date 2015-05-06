@@ -153,7 +153,7 @@ trait ReaderMonads extends ValidMonads with FutureMonads {
       fa.flatMap(f)
 
     def point[A](a: => A) =
-      Reader(_ => a)
+      ReaderFacade(a)
   }
 
   implicit def readerValidMonad[F,E] = new FMonad[E, ({type RV[+T] = ReaderValid[F,E,T]})#RV] {

@@ -47,12 +47,12 @@ trait ValidTransforms {
 
   implicit def ValidReaderValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = ReaderValid[F, E,T]})#RV] {
     def apply[T](value: Valid[E, T]): ReaderValid[F, E,T] =
-      Reader(_ => value)
+      ReaderFacade(value)
   }
 
   implicit def ValidReaderFutureValid[F,E] = new ~>[ ({type V[+T] = Valid[E,T]})#V,({type RV[+T] = ReaderFutureValid[F, E,T]})#RV] {
     def apply[T](value: Valid[E, T]): ReaderFutureValid[F, E, T] =
-      Reader(_ => FutureLift(value))
+      ReaderFacade(FutureLift(value))
   }
 
 }
@@ -69,19 +69,19 @@ trait FutureTransforms {
   implicit def FutureReaderFuturePipe[F](implicit ec:ExecutionContext) =
     new ~>[Future, ({type RF[+T] = ReaderFuture[F,T]})#RF] {
       def apply[T](value: Future[T]): ReaderFuture[F,T] =
-        Reader(_ => value)
+        ReaderFacade(value)
     }
 
   implicit def FutureFutureReaderValidPipe[F, E](implicit ec:ExecutionContext) =
     new ~>[Future,  ({type RFV[+T] = ReaderFutureValid[F, E, T]})#RFV] {
       def apply[T](value:Future[T]):ReaderFutureValid[F, E, T] =
-        Reader(_ => value.map(scalaz.Success(_)))
+        ReaderFacade(value.map(scalaz.Success(_)))
     }
 
   implicit def FutureValidReaderFutureValid[F, E](implicit ec:ExecutionContext) =
     new ~>[({type V[+T] = FutureValid[E,T]})#V,  ({type RFV[+T] = ReaderFutureValid[F, E, T]})#RFV] {
       def apply[T](value:FutureValid[E, T]):ReaderFutureValid[F, E, T] =
-        Reader(_ => value)
+        ReaderFacade(value)
     }
 
 

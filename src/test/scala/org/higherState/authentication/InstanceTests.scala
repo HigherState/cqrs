@@ -46,8 +46,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     //CQRS actors repository service.
     //Single command handler actor and single query executor actor
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
-    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap) with ActorAdapter))
-    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap) with ActorAdapter))
+    val repositoryCommandHandler = system.actorOf(Props(AsActor(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap))))
+    val repositoryQueryExecutor = system.actorOf(Props(AsActor(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
     val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](CommandQueryController.actor[Id](repositoryCommandHandler, repositoryQueryExecutor))
 
     val authCommandHandler = new AuthenticationCommandHandler[FV, Future](akkaCqrsRepository, 10)
@@ -73,8 +73,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     val testHashRepository =
       new HashMapRepository(mutable.HashMap.empty[UserLogin, UserCredentials])
 
-    val authCommandHandler = system.actorOf(Props(new AuthenticationCommandHandler[V, Id](testHashRepository, 10) with ActorAdapter))
-    val authQueryExecutor = system.actorOf(Props(new AuthenticationQueryExecutor[V, Id](testHashRepository) with ActorAdapter))
+    val authCommandHandler = system.actorOf(Props(AsActor(new AuthenticationCommandHandler[V, Id](testHashRepository, 10))))
+    val authQueryExecutor = system.actorOf(Props(AsActor(new AuthenticationQueryExecutor[V, Id](testHashRepository))))
     val akkaCqrsAuthenticationService = new AuthenticationService[FV](CommandQueryController.actor[V](authCommandHandler, authQueryExecutor))
 
     whenReady(akkaCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>
@@ -90,12 +90,12 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
 
   test("CQRS actor authentication piping from actor repository service") {
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
-    val repositoryCommandHandler = system.actorOf(Props(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap) with ActorAdapter))
-    val repositoryQueryExecutor = system.actorOf(Props(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap) with ActorAdapter))
+    val repositoryCommandHandler = system.actorOf(Props(AsActor(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap))))
+    val repositoryQueryExecutor = system.actorOf(Props(AsActor(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
     val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](CommandQueryController.actor[Id](repositoryCommandHandler, repositoryQueryExecutor))
 
-    val authCommandHandler = system.actorOf(Props(new AuthenticationCommandHandler[FV, Future](akkaCqrsRepository, 10) with ActorAdapter))
-    val authQueryExecutor = system.actorOf(Props(new AuthenticationQueryExecutor[FV, Future](akkaCqrsRepository) with ActorAdapter))
+    val authCommandHandler = system.actorOf(Props(AsActor(new AuthenticationCommandHandler[FV, Future](akkaCqrsRepository, 10))))
+    val authQueryExecutor = system.actorOf(Props(AsActor(new AuthenticationQueryExecutor[FV, Future](akkaCqrsRepository))))
     val akkaChainedCqrsAuthenticationService = new AuthenticationService[FV](CommandQueryController.actor[V](authCommandHandler, authQueryExecutor))
 
     whenReady(akkaChainedCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>

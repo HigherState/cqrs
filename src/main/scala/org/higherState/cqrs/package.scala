@@ -11,4 +11,6 @@ package object cqrs {
 
   type EitherActor = Either[ActorRef, ActorSelection]
   type Monad[F[_]] = scalaz.Monad[F]
+
+  val >> = AsActor
 }

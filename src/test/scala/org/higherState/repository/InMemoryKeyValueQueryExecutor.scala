@@ -5,7 +5,7 @@ import org.higherState.cqrs
 import java.util.concurrent.atomic.AtomicReference
 import scalaz.Monad
 
-abstract class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
+class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
   extends MonadBound[Out] with QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] {
 
   def execute = {

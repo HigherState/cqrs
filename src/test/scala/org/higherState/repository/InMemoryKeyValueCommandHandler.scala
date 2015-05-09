@@ -2,18 +2,19 @@ package org.higherState.repository
 
 import java.util.concurrent.atomic.AtomicReference
 import org.higherState.cqrs._
-import scalaz.Monad
 
 class InMemoryKeyValueCommandHandler[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
-  extends MonadBound[Out] with CommandHandler[Out, KeyValueCommand[Key,Value]] {
+  extends CommandHandler[Out, KeyValueCommand[Key,Value]] {
+
+  import Monad._
 
   def handle = {
     case Add(kv) =>
       state.set(state.get() + kv)
-      point()
+      acknowledged
     case Remove(key) =>
       state.set(state.get() - key)
-      point()
+      acknowledged
   }
 }
 

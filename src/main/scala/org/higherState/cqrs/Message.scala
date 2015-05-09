@@ -1,9 +1,9 @@
 package org.higherState.cqrs
 
-trait Message
+trait Message[R]
 
-trait MessageReceiver[Out[+_], M <: Message] {
+trait MessageReceiver[Out[+_], M[_] <: Message[_]] {
 
-  def handle:Function[M, Out[Any]]
+  def handle[T]:Function[M[T], Out[T]]
 
 }

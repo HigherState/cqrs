@@ -39,20 +39,20 @@ class AuthenticationCommandHandler[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
       }
 
     case IncrementFailureCount(userLogin) =>
-      map(repository.get(userLogin)) {
+      bind(repository.get(userLogin)) {
         case Some(uc) =>
           val newCount = uc.failureCount + 1
           repository += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries)
         case None =>
-          point()
+          acknowledged
       }
 
     case ResetFailureCount(userLogin) =>
-      map(repository.get(userLogin)) {
+      bind(repository.get(userLogin)) {
         case Some(uc) =>
           repository += uc.userLogin -> uc.copy(failureCount = 0)
         case None =>
-          point()
+          acknowledged
       }
   }
 }

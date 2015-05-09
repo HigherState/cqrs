@@ -2,12 +2,12 @@ package org.higherState.repository
 
 import org.higherState.cqrs.QueryParameters
 
-sealed trait KeyValueQueryParameters[Key, Value] extends QueryParameters
+sealed trait KeyValueQueryParameters[R, Key, Value] extends QueryParameters[R]
 
-case class Contains[Key, Value](key:Key) extends KeyValueQueryParameters[Key, Value]
+final case class Contains[Key, Value](key:Key) extends KeyValueQueryParameters[Boolean, Key, Value]
 
-case class Get[Key, Value](key:Key) extends KeyValueQueryParameters[Key, Value]
+final case class Get[Key, Value](key:Key) extends KeyValueQueryParameters[Option[Value], Key, Value]
 
-case class Iterator[Key,Value]() extends KeyValueQueryParameters[Key, Value]
+final case class Iterator[Key,Value]() extends KeyValueQueryParameters[TraversableOnce[(Key, Value)], Key, Value]
 
-case class Values[Key,Value]() extends KeyValueQueryParameters[Key, Value]
+final case class Values[Key,Value]() extends KeyValueQueryParameters[TraversableOnce[Value], Key, Value]

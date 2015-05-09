@@ -14,40 +14,42 @@ trait KeyValueRepository[Out[+_], Key, Value] extends Service[Out] {
 
   def values:Out[TraversableOnce[Value]]
 
-  def += (kv:(Key, Value)):Out[Unit]
+  def += (kv:(Key, Value)):Out[Ack]
 
-  def -= (key:Key):Out[Unit]
+  def -= (key:Key):Out[Ack]
 }
 
-class KeyValueCqrsRepository[Out[+_], Key, Value](controller:CommandQueryController[Out, KeyValueCommand[Key, Value], KeyValueQueryParameters[Key, Value]]) extends KeyValueRepository[Out, Key, Value] {
+class KeyValueCqrsRepository[Out[+_], Key, Value](controller:CommandQueryController[Out, KeyValueCommand[Key, Value], Kvqe[Key, Value]#I]) extends KeyValueRepository[Out, Key, Value] {
 
-  def contains(key:Key):Out[Boolean] =
-    controller.executeQuery[Boolean](Contains(key))
+  def contains(key:Key) =
+    controller.executeQuery(Contains(key))
 
-  def get(key:Key):Out[Option[Value]] =
-    controller.executeQuery[Option[Value]](Get(key))
+  def get(key:Key) =
+    controller.executeQuery(Get(key))
 
-  def iterator:Out[TraversableOnce[(Key, Value)]] =
-    controller.executeQuery[TraversableOnce[(Key, Value)]](Iterator())
+  def iterator =
+    controller.executeQuery(Iterator())
 
-  def values:Out[TraversableOnce[Value]] =
-    controller.executeQuery[TraversableOnce[Value]](Values())
+  def values =
+    controller.executeQuery(Values())
 
-  def += (kv:(Key, Value)):Out[Unit] =
+  def += (kv:(Key, Value)) =
     controller.sendCommand(Add(kv))
 
-  def -= (key:Key):Out[Unit] =
+  def -= (key:Key) =
     controller.sendCommand(Remove(key))
 }
 
 // simple repository for testing
 class HashMapRepository[Key, Value](state:mutable.Map[Key,Value]) extends KeyValueRepository[Id, Key, Value] {
-  def -=(key: Key) {
+  def -=(key: Key) ={
     state -= key
+    Acknowledged
   }
 
-  def +=(kv: (Key, Value)) {
+  def +=(kv: (Key, Value)) ={
     state += kv
+    Acknowledged
   }
 
   def values =

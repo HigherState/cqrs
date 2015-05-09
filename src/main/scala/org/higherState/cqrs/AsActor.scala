@@ -30,19 +30,19 @@ object AsActor {
       }
     }
 
-  def apply[Out[+_], QP <: QueryParameters](queryExecutor:QueryExecutor[Out, QP]):Actor =
+  def apply[Out[+_], QP[_] <: QueryParameters[_]](queryExecutor:QueryExecutor[Out, QP]):Actor =
     new PipeableActor {
       def receive = {
-        case qp:QueryParameters =>
-          pipeSender(queryExecutor.execute(qp.asInstanceOf[QP]))
+        case qp:QP[_]@unchecked =>
+          pipeSender(queryExecutor.execute(qp))
       }
     }
 
-  def apply[Out[+_], M <: Message](messageReceiver:MessageReceiver[Out, M]):Actor =
+  def apply[Out[+_], M[_] <: Message[_]](messageReceiver:MessageReceiver[Out, M]):Actor =
     new PipeableActor {
       def receive = {
-        case m:Message =>
-          pipeSender(messageReceiver.handle(m.asInstanceOf[M]))
+        case m:M[_]@unchecked =>
+          pipeSender(messageReceiver.handle(m))
       }
     }
 
@@ -58,19 +58,19 @@ final class FoldParamCurry[Out[+_]] {
       }
     }
 
-  def apply[Out2[+_], QP <: QueryParameters](queryExecutor:QueryExecutor[({type X[+T] = Out[Out2[T]]})#X, QP])(implicit fold:Fold[Out]) =
+  def apply[Out2[+_], QP[_] <: QueryParameters[_]](queryExecutor:QueryExecutor[({type X[+T] = Out[Out2[T]]})#X, QP])(implicit fold:Fold[Out]) =
     new PipeableActor {
       def receive = {
-        case qp:QueryParameters =>
-          fold(queryExecutor.execute(qp.asInstanceOf[QP]))(pipeSender)
+        case qp:QP[_]@unchecked =>
+          fold(queryExecutor.execute(qp))(pipeSender)
       }
     }
 
-  def apply[Out2[+_], M <: Message](messageReceiver:MessageReceiver[({type X[+T] = Out[Out2[T]]})#X, M])(implicit fold:Fold[Out]) =
+  def apply[Out2[+_], M[_] <: Message[_]](messageReceiver:MessageReceiver[({type X[+T] = Out[Out2[T]]})#X, M])(implicit fold:Fold[Out]) =
     new PipeableActor {
       def receive = {
-        case m:Message =>
-          fold(messageReceiver.handle(m.asInstanceOf[M]))(pipeSender)
+        case m:M[_]@unchecked =>
+          fold(messageReceiver.handle(m))(pipeSender)
       }
     }
 }

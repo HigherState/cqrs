@@ -37,7 +37,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     val qe = new AuthenticationQueryExecutor[V, Id](testHashRepository)
     val testAuthenticationService = new AuthenticationService(CommandQueryController(ch, qe))
 
-    testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success())
+    testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success(Acknowledged))
     testAuthenticationService.authenticate(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success(UserLogin("test@test.com")))
     testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
   }
@@ -47,8 +47,10 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     //Single command handler actor and single query executor actor
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
     val repositoryCommandHandler = system.actorOf(Props(AsActor(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap))))
-    val repositoryQueryExecutor = system.actorOf(Props(AsActor(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
-    val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](CommandQueryController.actor[Id](repositoryCommandHandler, repositoryQueryExecutor))
+    val repositoryQueryExecutor = system.actorOf(Props(AsActor[Id,Kvqe[UserLogin, UserCredentials]#I](new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
+    val akkaCqrsRepository =
+      new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](
+        CommandQueryController.actor[Id][KeyValueCommand[UserLogin, UserCredentials], Kvqe[UserLogin, UserCredentials]#I](repositoryCommandHandler, repositoryQueryExecutor))
 
     val authCommandHandler = new AuthenticationCommandHandler[FV, Future](akkaCqrsRepository, 10)
     val authQueryExecutor = new AuthenticationQueryExecutor[FV, Future](akkaCqrsRepository)
@@ -57,7 +59,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     //Authentication service will handle futures from repository actor
 
     whenReady(futureAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>
-      result1 should equal (scalaz.Success())
+      result1 should equal (scalaz.Success(Acknowledged))
       whenReady(futureAuthenticationService.authenticate(UserLogin("test@test.com"), Password("password"))) {result2 =>
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }
@@ -78,7 +80,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
     val akkaCqrsAuthenticationService = new AuthenticationService[FV](CommandQueryController.actor[V](authCommandHandler, authQueryExecutor))
 
     whenReady(akkaCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>
-      result1 should equal (scalaz.Success())
+      result1 should equal (scalaz.Success(Acknowledged))
       whenReady(akkaCqrsAuthenticationService.authenticate(UserLogin("test@test.com"), Password("password"))) {result2 =>
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }
@@ -91,15 +93,17 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
   test("CQRS actor authentication piping from actor repository service") {
     val atomicHashMap = new AtomicReference[Map[UserLogin, UserCredentials]](Map.empty[UserLogin, UserCredentials])
     val repositoryCommandHandler = system.actorOf(Props(AsActor(new InMemoryKeyValueCommandHandler[Id, UserLogin, UserCredentials](atomicHashMap))))
-    val repositoryQueryExecutor = system.actorOf(Props(AsActor(new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
-    val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](CommandQueryController.actor[Id](repositoryCommandHandler, repositoryQueryExecutor))
+    val repositoryQueryExecutor = system.actorOf(Props(AsActor[Id,Kvqe[UserLogin, UserCredentials]#I](new InMemoryKeyValueQueryExecutor[Id, UserLogin, UserCredentials](atomicHashMap))))
+    val akkaCqrsRepository = new KeyValueCqrsRepository[Future, UserLogin, UserCredentials](
+      CommandQueryController.actor[Id][KeyValueCommand[UserLogin, UserCredentials], Kvqe[UserLogin, UserCredentials]#I](repositoryCommandHandler, repositoryQueryExecutor)
+    )
 
     val authCommandHandler = system.actorOf(Props(AsActor(new AuthenticationCommandHandler[FV, Future](akkaCqrsRepository, 10))))
     val authQueryExecutor = system.actorOf(Props(AsActor(new AuthenticationQueryExecutor[FV, Future](akkaCqrsRepository))))
     val akkaChainedCqrsAuthenticationService = new AuthenticationService[FV](CommandQueryController.actor[V](authCommandHandler, authQueryExecutor))
 
     whenReady(akkaChainedCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result1 =>
-      result1 should equal (scalaz.Success())
+      result1 should equal (scalaz.Success(Acknowledged))
       whenReady(akkaChainedCqrsAuthenticationService.authenticate(UserLogin("test@test.com"), Password("password"))) {result2 =>
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }

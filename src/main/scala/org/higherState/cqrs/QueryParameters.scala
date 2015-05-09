@@ -1,8 +1,8 @@
 package org.higherState.cqrs
 
-trait QueryParameters
+trait QueryParameters[R]
 
-trait QueryExecutor[Out[+_], QP <: QueryParameters] {
-  def execute:Function[QP, Out[Any]]
+trait QueryExecutor[Out[+_], QP[_] <: QueryParameters[_]] {
+  def execute[T]:Function[QP[T], Out[T]]
 }
 

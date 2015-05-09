@@ -22,10 +22,10 @@ class AuthenticationService[Out[+_]](controller:CommandQueryController[Out, Auth
   def updatePasswordWithCurrentPassword(userLogin:UserLogin, currentPassword:Password, newPassword:Password) =
     controller.sendCommand(UpdatePasswordWithCurrentPassword(userLogin, currentPassword, newPassword))
 
-  def authenticate(userLogin:UserLogin, password:Password):Out[UserLogin] =
-    controller.executeQuery[UserLogin](Authenticate(userLogin, password))
+  def authenticate(userLogin:UserLogin, password:Password) =
+    controller.executeQuery(Authenticate(userLogin, password))
 
   def getLockedUserLogins =
-    controller.executeQuery[TraversableOnce[(UserLogin, Int)]](GetLockedUserLogins)
+    controller.executeQuery(GetLockedUserLogins)
 
 }

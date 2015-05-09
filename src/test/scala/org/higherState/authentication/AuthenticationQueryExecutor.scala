@@ -9,7 +9,7 @@ class AuthenticationQueryExecutor[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
 
   import ServicePipe._
 
-  def execute = {
+  def execute[T] = {
     case Authenticate(userLogin, password) =>
       withRequiredAuthenticatedCredentials(userLogin, password) {
         case UserCredentials(actualUserLogin, _, true, _) =>

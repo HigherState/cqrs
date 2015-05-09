@@ -1,14 +1,14 @@
 package org.higherState.repository
 
-import org.higherState.cqrs.{MonadBound, QueryExecutor}
-import org.higherState.cqrs
+import org.higherState.cqrs._
 import java.util.concurrent.atomic.AtomicReference
-import scalaz.Monad
 
-class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
-  extends MonadBound[Out] with QueryExecutor[Out, KeyValueQueryParameters[Key, Value]] {
+final class InMemoryKeyValueQueryExecutor[Out[+_]:Monad, Key, Value](state:AtomicReference[Map[Key, Value]])
+  extends QueryExecutor[Out, Kvqe[Key, Value]#I] {
 
-  def execute = {
+  import Monad._
+
+  def execute[T]:Function[KeyValueQueryParameters[T, Key, Value], Out[T]] = {
     case Contains(key) =>
       point(state.get().contains(key))
 

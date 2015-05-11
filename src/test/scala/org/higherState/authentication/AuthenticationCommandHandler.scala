@@ -7,7 +7,7 @@ class AuthenticationCommandHandler[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
   (repository:KeyValueRepository[In, UserLogin, UserCredentials], maxNumberOfTries:Int)
   extends AuthenticationDirectives[Out, In](repository) with CommandHandler[Out, AuthenticationCommand]{
 
-  import ServicePipe._
+  import VMonad._
 
   def handle = {
     case CreateNewUser(userLogin, password) =>
@@ -39,7 +39,7 @@ class AuthenticationCommandHandler[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
       }
 
     case IncrementFailureCount(userLogin) =>
-      bind(repository.get(userLogin)) {
+      repository.get(userLogin).flatMap {
         case Some(uc) =>
           val newCount = uc.failureCount + 1
           repository += uc.userLogin -> uc.copy(failureCount = newCount, isLocked = newCount >= maxNumberOfTries)
@@ -48,7 +48,7 @@ class AuthenticationCommandHandler[Out[+_]:VMonad, In[+_]:(~>![Out])#I]
       }
 
     case ResetFailureCount(userLogin) =>
-      bind(repository.get(userLogin)) {
+      repository.get(userLogin).flatMap {
         case Some(uc) =>
           repository += uc.userLogin -> uc.copy(failureCount = 0)
         case None =>

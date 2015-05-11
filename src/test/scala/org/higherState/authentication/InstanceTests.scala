@@ -24,8 +24,8 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
   implicit val exectionContext:ExecutionContext = system.dispatcher
   implicit val globalTimeout:Timeout = 5.minutes
 
-  type FV[+T] = FutureValid[ValidationFailure, T]
-  type V[+T] = Valid[ValidationFailure, T]
+  type FV[+T] = FutureValid[String, T]
+  type V[+T] = Valid[String, T]
 
   test("Simple service, not designed to handle concurrency") {
     //simple repository service
@@ -39,7 +39,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
 
     testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success(Acknowledged))
     testAuthenticationService.authenticate(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Success(UserLogin("test@test.com")))
-    testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
+    testAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password")) should equal (scalaz.Failure(scalaz.NonEmptyList("UserCredentialsAlreadyExistFailure(userLogin)")))
   }
 
   test("CQRS actor implementation on repository with a future handling on the authentication service") {
@@ -64,7 +64,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }
       whenReady(futureAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result3 =>
-        result3 should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
+        result3 should equal (scalaz.Failure(scalaz.NonEmptyList("UserCredentialsAlreadyExistFailure(userLogin)")))
       }
     }
   }
@@ -85,7 +85,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }
       whenReady(akkaCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result3 =>
-        result3 should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
+        result3 should equal (scalaz.Failure(scalaz.NonEmptyList("UserCredentialsAlreadyExistFailure(userLogin)")))
       }
     }
   }
@@ -108,7 +108,7 @@ class InstanceTests extends FunSuite with Matchers with ScalaFutures with Before
         result2 should equal (scalaz.Success(UserLogin("test@test.com")))
       }
       whenReady(akkaChainedCqrsAuthenticationService.createNewUser(UserLogin("test@test.com"), Password("password"))) { result3 =>
-        result3 should equal (scalaz.Failure(scalaz.NonEmptyList(UserCredentialsAlreadyExistFailure(UserLogin("test@test.com")))))
+        result3 should equal (scalaz.Failure(scalaz.NonEmptyList("UserCredentialsAlreadyExistFailure(userLogin)")))
       }
     }
   }

@@ -25,6 +25,8 @@ class AuthenticationService[Out[+_]](controller:CommandQueryController[Out, Auth
   def authenticate(userLogin:UserLogin, password:Password) =
     controller.executeQuery(Authenticate(userLogin, password))
 
+  def isLocker(userLogin:UserLogin) =
+    controller.executeQuery(IsLocked(userLogin))
   def getLockedUserLogins =
     controller.executeQuery(GetLockedUserLogins)
 

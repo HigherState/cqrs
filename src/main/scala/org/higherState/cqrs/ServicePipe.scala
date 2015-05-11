@@ -7,6 +7,20 @@ import scalaz.syntax.ToMonadOps
 trait PipeOps {
   implicit def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
     = nt.apply(value)
+
+  implicit class SeqPipeMonad[Out[+_], In[+_], A](in: Seq[In[A]])(implicit monad: Monad[Out], pipe:In ~> Out) {
+    import scalaz.Scalaz._
+
+    def sequence:Out[Seq[A]] =
+      monad.sequence(in.map(pipe.apply).toList)
+  }
+
+  implicit class SeqMonad[Out[+_], A](in: Seq[Out[A]])(implicit monad: Monad[Out]) {
+    import scalaz.Scalaz._
+
+    def sequence:Out[Seq[A]] =
+      monad.sequence(in.toList)
+  }
 }
 
 object ServicePipe extends PipeOps
@@ -50,6 +64,7 @@ trait PipeFMonad {
     def onFailure[T >: A](f:NonEmptyList[E] => Out[T]):Out[T] =
       monad.onFailure[A, T](pipe(in))(f)
   }
+
   implicit class FailureMonad[Out[+_], E, A](out:Out[A])(implicit monad: FMonad[E, Out]) {
     def onFailure[T >: A](f:NonEmptyList[E] => Out[T]):Out[T] =
       monad.onFailure[A, T](out)(f)

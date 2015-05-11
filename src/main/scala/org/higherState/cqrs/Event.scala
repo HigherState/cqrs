@@ -9,6 +9,6 @@ trait EventListener[E <: Event] extends Listener {
 }
 
 trait ServiceListener[Out[+_], E <: Event] extends Listener {
-  def handle:PartialFunction[E, Out[Unit]]
+  def handle:PartialFunction[E, Out[Acknowledged]]
 }
 

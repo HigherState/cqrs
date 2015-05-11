@@ -19,7 +19,7 @@ object AsActor {
   def apply[Out[+_], E <: Event](listener:ServiceListener[Out, E])(implicit fold:Fold[Out]):Actor =
     new Actor {
       def receive: Receive =
-        listener.handle.andThen(t => fold.apply[Unit](t)(_ => Unit)).asInstanceOf[Receive]
+        listener.handle.andThen(t => fold.apply[Acknowledged](t)(_ => Unit)).asInstanceOf[Receive]
     }
 
   def apply[Out[+_], C <: Command](commandHandler:CommandHandler[Out, C]):Actor =

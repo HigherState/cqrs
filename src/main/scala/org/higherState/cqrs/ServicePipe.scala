@@ -3,7 +3,6 @@ package org.higherState.cqrs
 import scalaz._
 import scalaz.syntax.ToMonadOps
 
-
 trait PipeOps {
   implicit def ~>[In[+_], Out[+_],T](value:In[T])(implicit nt: ~>[In,Out]):Out[T]
     = nt.apply(value)
@@ -34,6 +33,19 @@ trait PipeMonad {
   }
 }
 
+trait OptionOps {
+  implicit class OptionExt[T](value:Option[T]) {
+    def mapM[Out[+_], S](f:T => Out[S])(implicit monad:Monad[Out]):Out[Option[S]] =
+      value.fold[Out[Option[S]]](monad.point(None))(t => monad.map(f(t))(Some(_)))
+    def flatMapM[Out[+_], S](f:T => Out[Option[S]])(implicit monad:Monad[Out]):Out[Option[S]] =
+      value.fold[Out[Option[S]]](monad.point(None))(t => f(t))
+    def foldM[Out[+_], S](default: => Out[S])(f:T => Out[S])(implicit monad:Monad[Out]):Out[S] =
+      value.fold(default)(t =>
+        f(t)
+      )
+  }
+}
+
 trait MonadOps {
   import scalaz.Scalaz._
 
@@ -44,7 +56,7 @@ trait MonadOps {
     monad.sequence(l)
 }
 
-object Monad extends PipeMonad with PipeOps with MonadOps with ToMonadOps
+object Monad extends PipeMonad with PipeOps with MonadOps with ToMonadOps with OptionOps
 
 trait FMonad[E, Out[+_]] extends Monad[Out] {
 
@@ -79,7 +91,7 @@ trait FMonadOps extends MonadOps {
     fmonad.failures(validationFailures)
 }
 
-object FMonad extends PipeFMonad with PipeOps with FMonadOps with ToMonadOps
+object FMonad extends PipeFMonad with PipeOps with FMonadOps with ToMonadOps with OptionOps
 
 object Scalaz extends
   StateFunctions        // Functions related to the state monad

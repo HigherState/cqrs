@@ -125,6 +125,8 @@ class MeetupScriptTests extends FunSuite with Matchers with ScalaFutures with Be
 class SourceService[Out[+_]:scalaz.Monad] extends MonadBound[Out] {
   def doSomething:Out[String] =
     point("Result")
+  def someOption:Out[Option[String]] =
+    point(Some("value"))
 }
 import Scalaz._
 class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_]:(~>![Out])#I]
@@ -136,7 +138,8 @@ class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_
     for {
       s <- myService.doSomething
       s1 = ","
-      s2 <- myService2.doSomething
+      s2 <- myService2.someOption
+      s3 <- s2.mapM(t => myService2.doSomething)
     } yield s + s1 + s2
   }
 

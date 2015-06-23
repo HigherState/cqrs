@@ -139,7 +139,6 @@ class SimplifiedMultiplePipes[Out[+_]:scalaz.Monad, In1[+_]:(~>![Out])#I, In2[+_
       s <- myService.doSomething
       s1 = ","
       s2 <- myService2.someOption
-      s3 <- s2.mapM(t => myService2.doSomething)
     } yield s + s1 + s2
   }
 

@@ -1,6 +1,6 @@
 package org.higherState.cqrs
 
-trait Command
+trait Command extends Serializable
 
 trait CommandHandler[Out[+_], C <: Command] {
 
@@ -10,5 +10,5 @@ trait CommandHandler[Out[+_], C <: Command] {
     m.point(Acknowledged)
 }
 
-trait Acknowledged
+trait Acknowledged extends Serializable
 object Acknowledged extends Acknowledged

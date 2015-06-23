@@ -1,6 +1,6 @@
 package org.higherState.cqrs
 
-trait Message[R]
+trait Message[R] extends Serializable
 
 trait MessageReceiver[Out[+_], M[_] <: Message[_]] {
 
